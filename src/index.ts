@@ -37,6 +37,25 @@ const getPageIds = async () => {
 }
 
 /**
+ * Dateカラムのレコードが今日の日付と一致しているかの判定
+ * @param {string} pageId - page_id
+ * @param {string} today - YYYY-MM-DD
+ * @returns {boolean} レコードとtodayが一致しているか
+ */
+const isMatchOfToday = async (pageId: string, today: string) => {
+    try {
+        const response = await notion.pages.retrieve({
+            page_id: pageId,
+        });
+        return response.properties.Date.date.start === today
+    } catch (error) {
+        if (error instanceof UnknownHTTPResponseError) {
+            console.log(error.body)
+        }
+    }
+}
+
+/**
  * 翌週の日直当番の日付をレコードに追加
  * @returns {void}
  */
@@ -67,7 +86,54 @@ const updateContentForDate = async () => {
         }
     }
 }
-updateContentForDate()
+
+const updateContentForTags = async (today: string) => {
+    try {
+        const pageIds = await getPageIds()
+        if (pageIds == null || pageIds.length === 0) return
+        pageIds.forEach( async (pageId) => {               
+            if (await isMatchOfToday(pageId, today)) {
+                const response = await notion.pages.update({
+                    page_id: pageId,
+                    archived: false,
+                    properties: {
+                        "Tags": {
+                            type: 'select',
+                            select: {
+                                name: "日直",
+                                color: "gray"
+                            }
+                        }
+                    }
+                })
+                console.log(response)
+            } else {
+                const response = await notion.pages.update({
+                    page_id: pageId,
+                    archived: false,
+                    properties: {
+                        "Tags": {
+                            type: 'select',
+                            select: null
+                        }
+                    }
+                })
+                console.log(response)
+            }
+        });
+        console.log("Success! Update tags.")
+    } catch (error) {
+        if (error instanceof UnknownHTTPResponseError) {
+            console.log(error.body)
+        }
+    }
+}
+
+
+(async () => {
+    await updateContentForDate()
+    await updateContentForTags(dayjs().format('YYYY-MM-DD'))
+})()
 
 /**
  * ユーザー一覧を取得
