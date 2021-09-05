@@ -1,5 +1,5 @@
 {
-  "name": "random_mc",
+  "name": "mc_calendar_with_notion",
   "version": "1.0.0",
   "description": "",
   "type": "module",
@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@holiday-jp/holiday_jp": "^2.3.0",
     "@notionhq/client": "^0.3.1",
     "dayjs": "^1.10.6",
     "dotenv": "^10.0.0"
