@@ -1,5 +1,5 @@
-import { Client, UnknownHTTPResponseError } from "@notionhq/client"
-import { DatePropertyValue } from '@notionhq/client/build/src/api-types'
+import { Client, UnknownHTTPResponseError } from "../node_modules/@notionhq/client"
+import { DatePropertyValue } from '../node_modules/@notionhq/client/build/src/api-types'
 import dotenv from "dotenv"
 dotenv.config()
 import dayjs, { Dayjs } from 'dayjs';
@@ -123,14 +123,14 @@ const updateContentForDate = async () => {
 
 /**
  * 当日が日直のメンバーにタグを追加する
- * @param today 
+ * @param today
  * @returns {void}
  */
 const updateContentForTags = async (today: string) => {
     try {
         const pageIds = await getPageIds()
         if (pageIds == null || pageIds.length === 0) return
-        pageIds.forEach( async (pageId) => {               
+        pageIds.forEach( async (pageId) => {
             if (await isToday(pageId, today)) {
                 const response = await notion.pages.update({
                     page_id: pageId,
