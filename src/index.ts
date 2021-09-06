@@ -1,10 +1,10 @@
-import { Client, UnknownHTTPResponseError } from "../node_modules/@notionhq/client"
-import { DatePropertyValue } from '../node_modules/@notionhq/client/build/src/api-types'
-import dotenv from "../node_modules/dotenv"
+import { Client, UnknownHTTPResponseError } from "@notionhq/client"
+import { DatePropertyValue } from '@notionhq/client/build/src/api-types'
+import dotenv from "dotenv"
 dotenv.config()
-import dayjs, { Dayjs } from '../node_modules/dayjs';
-import '../node_modules/dayjs/locale/ja.js'
-import holiday_jp from '../node_modules/@holiday-jp/holiday_jp';
+import dayjs, { Dayjs } from 'dayjs';
+import 'dayjs/locale/ja.js'
+import holiday_jp from '@holiday-jp/holiday_jp';
 
 const notion = new Client({ auth: process.env.NOTION_KEY })
 
