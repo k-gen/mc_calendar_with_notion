@@ -1,9 +1,11 @@
 import { Client, UnknownHTTPResponseError } from "@notionhq/client"
-import { DatePropertyValue } from '@notionhq/client/build/src/api-types'
+import { DatePropertyValue, TitlePropertyValue } from '@notionhq/client/build/src/api-types'
 import dotenv from "dotenv"
 dotenv.config()
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/ja.js'
+import weekday from 'dayjs/plugin/weekday.js'
+dayjs.extend(weekday)
 import holiday_jp from '@holiday-jp/holiday_jp';
 
 const notion = new Client({ auth: process.env.NOTION_KEY })
@@ -81,23 +83,96 @@ const getWeekdays = (dayjs: Dayjs) => {
 }
 
 /**
- * 翌週の日直当番の日付をレコードに追加
+ * 差分コンテンツの取得
+ * @param {number} diff - 当月の平日数とレコード行数の差
+ * @returns {Array<string>} 差分コンテンツのタイトル名
+ */
+const getDiffContents = async (diff: number) => {
+    const pageIds = await getPageIds()
+    const diffPageIds = pageIds?.slice(-diff)
+    try {
+        const response = await notion.databases.query({
+            database_id: databaseId ? databaseId : ''
+        })
+        const diffContent = response.results.filter(result => {
+            return diffPageIds?.includes(result.id)
+        }).map(result => {
+            const titleProperty = result.properties.Name as TitlePropertyValue
+            return titleProperty.title[0].plain_text
+        })
+        return diffContent
+    } catch (error) {
+        if (error instanceof UnknownHTTPResponseError) {
+            console.log(error.body)
+        }
+    }
+}
+
+/**
+ * 差分コンテンツをデータベースに追加
+ * @param {Array <string>} diffContents - 差分コンテンツのタイトル名
+ * @returns {Promise<void>}
+ */
+const createContent = (diffContents: string[]) => {
+    return new Promise<void>((resolve, reject) => {
+        try {
+            diffContents?.map(async diffcontent => {
+                const response = await notion.pages.create({
+                    parent: { database_id: databaseId ? databaseId : ''},
+                    properties: {
+                        title: {
+                            type: "title",
+                            title: [{
+                                "type": "text",
+                                "text": {
+                                    "content": diffcontent
+                                }
+                            }]
+                        }
+                    }
+                })
+                console.log('Create done!');
+                resolve()
+            });
+        } catch (error) {
+            if (error instanceof UnknownHTTPResponseError) {
+                console.log(error.body)
+                reject()
+            }
+        }
+    })
+}
+
+/**
+ * 日直当番の日付をレコードに追加
  * @returns {void}
  */
-const updateContentForDate = async () => {
+const updateContentOfDate = async () => {
+    // 各レコード行のidを取得
+    const pageIds = await getPageIds()
+    // pageIdsが取得できなかった場合は早期リターン
+    if (pageIds == null || pageIds.length === 0) return
+    // 当月の平日一覧を取得
+    let weekdays = getWeekdays(dayjs().date(1))
+    // 平日数がレコード行数に満たない場合は来月分も取得
+    if (pageIds.length > weekdays.length) {
+        let weekdaysInNextMonth = getWeekdays(dayjs().date(1).add(1, 'month'))
+        weekdays = [...weekdays,...weekdaysInNextMonth]
+    } else if ( weekdays.length > pageIds.length ) {
+        // 平日数がレコード行数より多い場合は不足分のレコードを追加作成
+        const diff = weekdays.length - pageIds.length
+        if (diff <= 0) return
+        const diffContents = await getDiffContents(diff)
+        if (diffContents == null) return
+        await createContent(diffContents)
+    }
+    
     try {
-        // 各レコード行のidを取得
-        const pageIds = await getPageIds()
-        if (pageIds == null || pageIds.length === 0) return
-        // 当月の平日のみのリストを取得
-        let weekdays = getWeekdays(dayjs())
-        // 当月の平日の数がレコード行数に満たない場合は来月分も取得
-        if (pageIds.length > weekdays.length) {
-            let weekdaysInNextMonth = getWeekdays(dayjs().date(1).add(1, 'month'))
-            weekdays = [...weekdays,...weekdaysInNextMonth]
-        }
+        // 追加分を含めた各レコード行のidを再取得
+        const allPageIds = await getPageIds()
+        
         // 各レコード行に日付を追加
-        pageIds.forEach( async (pageId, index) => {
+        allPageIds?.forEach( async (pageId, index) => {
             const response = await notion.pages.update({
                 page_id: pageId,
                 archived: false,
@@ -111,9 +186,9 @@ const updateContentForDate = async () => {
                     }
                 }
             })
-            console.log(response)
+            return response
         });
-        console.log("Success! Update contents.")
+        console.log("Success! Updated date.")
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
@@ -126,7 +201,7 @@ const updateContentForDate = async () => {
  * @param today
  * @returns {void}
  */
-const updateContentForTags = async (today: string) => {
+const updateContentOfTags = async (today: string) => {
     try {
         const pageIds = await getPageIds()
         if (pageIds == null || pageIds.length === 0) return
@@ -145,7 +220,7 @@ const updateContentForTags = async (today: string) => {
                         }
                     }
                 })
-                console.log(response)
+                return response
             } else {
                 const response = await notion.pages.update({
                     page_id: pageId,
@@ -157,10 +232,10 @@ const updateContentForTags = async (today: string) => {
                         }
                     }
                 })
-                console.log(response)
+                return response
             }
         });
-        console.log("Success! Update tags.")
+        console.log("Success! Updated tags.")
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
@@ -170,8 +245,8 @@ const updateContentForTags = async (today: string) => {
 
 
 (async () => {
-    await updateContentForDate()
-    await updateContentForTags(dayjs().format('YYYY-MM-DD'))
+    await updateContentOfDate()
+    await updateContentOfTags(dayjs().format('YYYY-MM-DD'))
 })()
 
 /**
