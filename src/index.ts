@@ -1,5 +1,6 @@
 import { Client, UnknownHTTPResponseError } from "@notionhq/client"
-import { DatePropertyValue, TitlePropertyValue } from '@notionhq/client/build/src/api-types'
+import { DatePropertyValue, TitlePropertyValue, SelectPropertyValue } from '@notionhq/client/build/src/api-types'
+import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import dotenv from "dotenv"
 dotenv.config()
 import dayjs, { Dayjs } from 'dayjs';
@@ -201,41 +202,73 @@ const updateContentOfDate = async () => {
  * @param today
  * @returns {void}
  */
-const updateContentOfTags = async (today: string) => {
-    try {
-        const pageIds = await getPageIds()
-        if (pageIds == null || pageIds.length === 0) return
-        pageIds.forEach( async (pageId) => {
-            if (await isToday(pageId, today)) {
-                const response = await notion.pages.update({
-                    page_id: pageId,
-                    archived: false,
-                    properties: {
-                        "Tags": {
-                            type: 'select',
-                            select: {
-                                name: "日直",
-                                color: "gray"
+const updateContentOfTodayTags = async (today: string) => {
+    const pageIds = await getPageIds()
+    return new Promise<void>((resolve, reject) => {
+        try {
+            pageIds?.forEach( async (pageId) => {
+                if (await isToday(pageId, today)) {
+                    const response = await notion.pages.update({
+                        page_id: pageId,
+                        archived: false,
+                        properties: {
+                            "Tags": {
+                                type: 'select',
+                                select: {
+                                    name: "日直",
+                                    color: "gray"
+                                }
                             }
                         }
-                    }
-                })
-                return response
-            } else {
-                const response = await notion.pages.update({
-                    page_id: pageId,
-                    archived: false,
-                    properties: {
-                        "Tags": {
-                            type: 'select',
-                            select: null
+                    })
+                    resolve()
+                } else {
+                    const response = await notion.pages.update({
+                        page_id: pageId,
+                        archived: false,
+                        properties: {
+                            "Tags": {
+                                type: 'select',
+                                select: null
+                            }
                         }
-                    }
-                })
-                return response
+                    })
+                }
+            });
+            console.log("Success! Updated tags.")
+        } catch (error) {
+            if (error instanceof UnknownHTTPResponseError) {
+                console.log(error.body)
+                reject()
             }
+        }
+    })
+    
+}
+
+/**
+ * 次回の日直を取得
+ * @returns {Promise<Page | undefined>} 次回の日直
+ */
+const queryNextMC = async () => {
+    try {
+        const res = await notion.databases.query({
+            database_id: databaseId != null ? databaseId : "",
+            sorts: [
+                {
+                    property: "Date",
+                    direction: "ascending"
+                }
+            ]
         });
-        console.log("Success! Updated tags.")
+        let target = res.results[0]
+        res.results.reduce((acc, current) => {
+            if ((acc.properties.Tags as SelectPropertyValue).select?.name === "日直") {
+                target = current
+            }
+            return current
+        })
+        return target
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
@@ -243,10 +276,40 @@ const updateContentOfTags = async (today: string) => {
     }
 }
 
+/**
+ * 次回の日直にタグを追加
+ * @returns {Promise<PagesUpdateResponse | undefined>}
+ */
+const updateContentOfNextTimeTags = async () => {
+    const target = await queryNextMC()
+    if (target == null) return
+    try {
+        const response = await notion.pages.update({
+            page_id: target.id,
+            archived: false,
+            properties: {
+                "Tags": {
+                    type: 'select',
+                    select: {
+                        name: "Next",
+                        color: "green"
+                    }
+                }
+            }
+        })
+        console.log("Success! Updated next MC.")
+        return response
+    } catch (error) {
+        if (error instanceof UnknownHTTPResponseError) {
+            console.log(error.body)
+        }
+    }
+}
 
 (async () => {
     await updateContentOfDate()
-    await updateContentOfTags(dayjs().format('YYYY-MM-DD'))
+    await updateContentOfTodayTags(dayjs().format('YYYY-MM-DD'))
+    await updateContentOfNextTimeTags()
 })()
 
 /**
