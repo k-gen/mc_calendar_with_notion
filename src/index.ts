@@ -1,5 +1,5 @@
 import { Client, UnknownHTTPResponseError } from "@notionhq/client"
-import { DatePropertyValue, TitlePropertyValue, SelectPropertyValue, Page } from '@notionhq/client/build/src/api-types'
+import { DatePropertyValue, TitlePropertyValue, Page } from '@notionhq/client/build/src/api-types'
 import { PagesCreateResponse, PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import dotenv from "dotenv"
 dotenv.config()
@@ -110,7 +110,7 @@ const queryDiffContents = async (pageIds: string[], diff: number): Promise<strin
 /**
  * 差分コンテンツをデータベースに追加
  * @param diffContents - 差分コンテンツのタイトル名
- * @returns
+ * @returns PagesCreateResponse
  */
 const createContent = async (diffContents: string[]): Promise<PagesCreateResponse[]> => {
     try {
@@ -142,7 +142,7 @@ const createContent = async (diffContents: string[]): Promise<PagesCreateRespons
 
 /**
  * 日直当番の日付を各行のDateプロパティに追加
- * @returns
+ * @returns PagesUpdateResponse
  */
 const updateContentOfDate = async (pageIds: string[], weekdays: string[]): Promise<PagesUpdateResponse[]> => {    
     try {
@@ -175,7 +175,7 @@ const updateContentOfDate = async (pageIds: string[], weekdays: string[]): Promi
 /**
  * 当日が日直のメンバーにタグを追加する
  * @param today - YYYY-MM-DD
- * @returns
+ * @returns PagesUpdateResponse
  */
 const updateContentOfTodayTags = async (pageIds: string[], today: string): Promise<PagesUpdateResponse[]> => {
     try {
@@ -219,9 +219,9 @@ const updateContentOfTodayTags = async (pageIds: string[], today: string): Promi
 
 /**
  * 次回の日直を取得
- * @returns 日直タグが付与されている行の次の行のページオブジェクト
+ * @returns 次回日直のページオブジェクト
  */
-const queryNextMC = async (): Promise<Page> => {
+const queryNextMC = async (today: string): Promise<Page> => {
     try {
         const response = await notion.databases.query({
             database_id: databaseId != null ? databaseId : "",
@@ -233,11 +233,15 @@ const queryNextMC = async (): Promise<Page> => {
             ]
         });
         let target = response.results[0] // 初期値
-        response.results.reduce((acc, current) => {
-            if ((acc.properties.Tags as SelectPropertyValue).select?.name === "日直") {
-                target = current
+        response.results.some((result) => {
+            // 今日から直近の平日を日直として変数に代入
+            const targetDate = dayjs((result.properties.Date as DatePropertyValue).date?.start)
+            const duration = dayjs(today).diff(targetDate, 'day')
+            if (duration < 0) {
+                target = result
+                return true
             }
-            return current
+            return false
         })
         return target
     } catch (error) {
@@ -250,10 +254,10 @@ const queryNextMC = async (): Promise<Page> => {
 
 /**
  * 次回の日直にタグを追加
- * @returns レスポンス
+ * @returns PagesUpdateResponse
  */
-const updateContentOfNextTimeTags = async (): Promise<PagesUpdateResponse> => {
-    const target = await queryNextMC()
+const updateContentOfNextTimeTags = async (today: string): Promise<PagesUpdateResponse> => {
+    const target = await queryNextMC(today)
     try {
         return await notion.pages.update({
             page_id: target.id,
@@ -277,30 +281,30 @@ const updateContentOfNextTimeTags = async (): Promise<PagesUpdateResponse> => {
 }
 
 (async () => {
+    const today = dayjs().format('YYYY-MM-DD')
     // 各行のidを取得
     let pageIds = await queryPageIds()
     // 当月の平日一覧を取得
-    let weekdays = getWeekdays(dayjs().date(1))
+    let weekdays = getWeekdays(dayjs(today).date(1))
     // 平日数が人数に満たない場合は来月分も取得
     if (pageIds.length > weekdays.length) {
-        let weekdaysInNextMonth = getWeekdays(dayjs().date(1).add(1, 'month'))
+        let weekdaysInNextMonth = getWeekdays(dayjs(today).date(1).add(1, 'month'))
         weekdays = [...weekdays,...weekdaysInNextMonth]
     }
     // 平日数が人数より多い場合は不足分を行の先頭から追加して補完
-    if ( weekdays.length > pageIds.length ) {
+    else if (weekdays.length > pageIds.length) {
         const diff = weekdays.length - pageIds.length
-        if (diff <= 0) return
         const diffContents = await queryDiffContents(pageIds, diff)
         await createContent(diffContents)
-        console.log('Create done!');
+        console.log(`${diffContents.length} items has created.`);
         // 追加分を含めた各行のidを再取得
         pageIds = await queryPageIds()
     }
     
     await updateContentOfDate(pageIds, weekdays)
     console.log("Success! Updated date.")
-    await updateContentOfTodayTags(pageIds, dayjs().format('YYYY-MM-DD'))
+    await updateContentOfTodayTags(pageIds, today)
     console.log("Success! Updated tags.")
-    await updateContentOfNextTimeTags()
+    await updateContentOfNextTimeTags(today)
     console.log("Success! Updated next MC.")
 })()
