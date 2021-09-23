@@ -1,5 +1,5 @@
 import { Client, UnknownHTTPResponseError } from "@notionhq/client"
-import { DatePropertyValue, TitlePropertyValue, SelectPropertyValue } from '@notionhq/client/build/src/api-types'
+import { DatePropertyValue, TitlePropertyValue, SelectPropertyValue, Page } from '@notionhq/client/build/src/api-types'
 import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import dotenv from "dotenv"
 dotenv.config()
@@ -15,9 +15,9 @@ const databaseId = process.env.NOTION_DATABASE_ID
 
 /**
  * 各レコード行のID(ページID)のリストを取得
- * @returns {Array} - pageIds
+ * @returns pageIdのリスト
  */
-const getPageIds = async () => {
+const queryPageIds = async (): Promise<string[]> => {
     try {
         const response = await notion.databases.query({
             database_id: databaseId != null ? databaseId : "",
@@ -30,37 +30,36 @@ const getPageIds = async () => {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
         }
+        throw error
     }
 }
 
 /**
- * 対象レコードのDateカラムの値が今日の日付と一致しているか判定
- * @param {string} pageId - page_id
- * @param {string} today - YYYY-MM-DD
- * @returns {boolean} レコードとtodayが一致しているか
+ * 対象レコードのDateプロパティの値が今日の日付と一致しているか判定
+ * @param pageId - page_id
+ * @param today - YYYY-MM-DD
+ * @returns Dateプロパティとtodayの値が一致していればtrue
  */
-const isToday = async (pageId: string, today: string) => {
+const isToday = async (pageId: string, today: string): Promise<boolean> => {
     try {
         const response = await notion.pages.retrieve({
             page_id: pageId,
         });
-        const dateProperty = response.properties.Date as DatePropertyValue
-        if (dateProperty.date != null) {
-            return dateProperty.date.start === today
-        }
+        return (response.properties.Date as DatePropertyValue).date?.start === today
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
         }
+        throw error
     }
 }
 
 /**
  * 引数の日付が休日であるか判定
- * @param {string} date - date
- * @returns {boolean} 休日ならtrue
+ * @param date - date
+ * @returns 引数の日付が休日ならtrue
  */
-const isHoliday = (date) => {
+const isHoliday = (date: string): boolean => {
     const isSaturday = dayjs(date).day() === 6
     const isSunday = dayjs(date).day() === 0
     return holiday_jp.isHoliday(new Date(date)) || isSaturday || isSunday
@@ -69,9 +68,9 @@ const isHoliday = (date) => {
 /**
  * 平日のリストを取得
  * @param dayjs
- * @returns {Array} weekdays
+ * @returns 平日のリスト
  */
-const getWeekdays = (dayjs: Dayjs) => {
+const getWeekdays = (dayjs: Dayjs): string[] => {
     let weekdays:string[] = []
     for (let i = 0; i < dayjs.daysInMonth(); i++) {
         let date = dayjs.add(i, 'day')
@@ -85,12 +84,12 @@ const getWeekdays = (dayjs: Dayjs) => {
 
 /**
  * 差分コンテンツの取得
- * @param {number} diff - 当月の平日数とレコード行数の差
- * @returns {Array<string>} 差分コンテンツのタイトル名
+ * @param diff - 当月の平日数とレコード行数の差
+ * @returns 差分コンテンツのタイトルのリスト
  */
-const getDiffContents = async (diff: number) => {
-    const pageIds = await getPageIds()
-    const diffPageIds = pageIds?.slice(-diff)
+const queryDiffContents = async (diff: number): Promise<string[]> => {
+    const pageIds = await queryPageIds()
+    const diffPageIds = pageIds.slice(-diff)
     try {
         const response = await notion.databases.query({
             database_id: databaseId ? databaseId : ''
@@ -98,27 +97,27 @@ const getDiffContents = async (diff: number) => {
         const diffContent = response.results.filter(result => {
             return diffPageIds?.includes(result.id)
         }).map(result => {
-            const titleProperty = result.properties.Name as TitlePropertyValue
-            return titleProperty.title[0].plain_text
+            return (result.properties.Name as TitlePropertyValue).title[0].plain_text
         })
         return diffContent
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
         }
+        throw error
     }
 }
 
 /**
  * 差分コンテンツをデータベースに追加
- * @param {Array <string>} diffContents - 差分コンテンツのタイトル名
- * @returns {Promise<void>}
+ * @param diffContents - 差分コンテンツのタイトル名
+ * @returns
  */
-const createContent = (diffContents: string[]) => {
+const createContent = (diffContents: string[]): Promise<void> => {
     return new Promise<void>((resolve, reject) => {
         try {
             diffContents?.map(async diffcontent => {
-                const response = await notion.pages.create({
+                await notion.pages.create({
                     parent: { database_id: databaseId ? databaseId : ''},
                     properties: {
                         title: {
@@ -146,11 +145,11 @@ const createContent = (diffContents: string[]) => {
 
 /**
  * 日直当番の日付をレコードに追加
- * @returns {void}
+ * @returns
  */
-const updateContentOfDate = async () => {
+const updateContentOfDate = async (): Promise<void> => {
     // 各レコード行のidを取得
-    const pageIds = await getPageIds()
+    const pageIds = await queryPageIds()
     // pageIdsが取得できなかった場合は早期リターン
     if (pageIds == null || pageIds.length === 0) return
     // 当月の平日一覧を取得
@@ -163,18 +162,18 @@ const updateContentOfDate = async () => {
         // 平日数がレコード行数より多い場合は不足分のレコードを追加作成
         const diff = weekdays.length - pageIds.length
         if (diff <= 0) return
-        const diffContents = await getDiffContents(diff)
+        const diffContents = await queryDiffContents(diff)
         if (diffContents == null) return
         await createContent(diffContents)
     }
     
     try {
         // 追加分を含めた各レコード行のidを再取得
-        const allPageIds = await getPageIds()
+        const allPageIds = await queryPageIds()
         
         // 各レコード行に日付を追加
         allPageIds?.forEach( async (pageId, index) => {
-            const response = await notion.pages.update({
+            await notion.pages.update({
                 page_id: pageId,
                 archived: false,
                 properties: {
@@ -187,7 +186,6 @@ const updateContentOfDate = async () => {
                     }
                 }
             })
-            return response
         });
         console.log("Success! Updated date.")
     } catch (error) {
@@ -199,16 +197,16 @@ const updateContentOfDate = async () => {
 
 /**
  * 当日が日直のメンバーにタグを追加する
- * @param today
- * @returns {void}
+ * @param today - YYYY-MM-DD
+ * @returns
  */
-const updateContentOfTodayTags = async (today: string) => {
-    const pageIds = await getPageIds()
+const updateContentOfTodayTags = async (today: string): Promise<void> => {
+    const pageIds = await queryPageIds()
     return new Promise<void>((resolve, reject) => {
         try {
             pageIds?.forEach( async (pageId) => {
                 if (await isToday(pageId, today)) {
-                    const response = await notion.pages.update({
+                    await notion.pages.update({
                         page_id: pageId,
                         archived: false,
                         properties: {
@@ -223,7 +221,7 @@ const updateContentOfTodayTags = async (today: string) => {
                     })
                     resolve()
                 } else {
-                    const response = await notion.pages.update({
+                    await notion.pages.update({
                         page_id: pageId,
                         archived: false,
                         properties: {
@@ -248,11 +246,11 @@ const updateContentOfTodayTags = async (today: string) => {
 
 /**
  * 次回の日直を取得
- * @returns {Promise<Page | undefined>} 次回の日直
+ * @returns 日直タグが付与されているレコードの次の行のページオブジェクト
  */
-const queryNextMC = async () => {
+const queryNextMC = async (): Promise<Page> => {
     try {
-        const res = await notion.databases.query({
+        const response = await notion.databases.query({
             database_id: databaseId != null ? databaseId : "",
             sorts: [
                 {
@@ -261,8 +259,8 @@ const queryNextMC = async () => {
                 }
             ]
         });
-        let target = res.results[0]
-        res.results.reduce((acc, current) => {
+        let target = response.results[0] // 初期値
+        response.results.reduce((acc, current) => {
             if ((acc.properties.Tags as SelectPropertyValue).select?.name === "日直") {
                 target = current
             }
@@ -273,18 +271,18 @@ const queryNextMC = async () => {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
         }
+        throw error
     }
 }
 
 /**
  * 次回の日直にタグを追加
- * @returns {Promise<PagesUpdateResponse | undefined>}
+ * @returns レスポンス
  */
-const updateContentOfNextTimeTags = async () => {
+const updateContentOfNextTimeTags = async (): Promise<void> => {
     const target = await queryNextMC()
-    if (target == null) return
     try {
-        const response = await notion.pages.update({
+        await notion.pages.update({
             page_id: target.id,
             archived: false,
             properties: {
@@ -298,11 +296,11 @@ const updateContentOfNextTimeTags = async () => {
             }
         })
         console.log("Success! Updated next MC.")
-        return response
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
         }
+        throw error
     }
 }
 
