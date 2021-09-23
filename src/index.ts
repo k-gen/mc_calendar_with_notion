@@ -1,6 +1,6 @@
 import { Client, UnknownHTTPResponseError } from "@notionhq/client"
 import { DatePropertyValue, TitlePropertyValue, SelectPropertyValue, Page } from '@notionhq/client/build/src/api-types'
-import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
+import { PagesCreateResponse, PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import dotenv from "dotenv"
 dotenv.config()
 import dayjs, { Dayjs } from 'dayjs';
@@ -14,7 +14,7 @@ const notion = new Client({ auth: process.env.NOTION_KEY })
 const databaseId = process.env.NOTION_DATABASE_ID
 
 /**
- * 各レコード行のID(ページID)のリストを取得
+ * 各行のID(ページID)のリストを取得
  * @returns pageIdのリスト
  */
 const queryPageIds = async (): Promise<string[]> => {
@@ -35,7 +35,7 @@ const queryPageIds = async (): Promise<string[]> => {
 }
 
 /**
- * 対象レコードのDateプロパティの値が今日の日付と一致しているか判定
+ * 対象のDateプロパティの値が今日の日付と一致しているか判定
  * @param pageId - page_id
  * @param today - YYYY-MM-DD
  * @returns Dateプロパティとtodayの値が一致していればtrue
@@ -84,11 +84,10 @@ const getWeekdays = (dayjs: Dayjs): string[] => {
 
 /**
  * 差分コンテンツの取得
- * @param diff - 当月の平日数とレコード行数の差
+ * @param diff - 当月の平日数と行数(人数)の差
  * @returns 差分コンテンツのタイトルのリスト
  */
-const queryDiffContents = async (diff: number): Promise<string[]> => {
-    const pageIds = await queryPageIds()
+const queryDiffContents = async (pageIds: string[], diff: number): Promise<string[]> => {
     const diffPageIds = pageIds.slice(-diff)
     try {
         const response = await notion.databases.query({
@@ -113,11 +112,11 @@ const queryDiffContents = async (diff: number): Promise<string[]> => {
  * @param diffContents - 差分コンテンツのタイトル名
  * @returns
  */
-const createContent = (diffContents: string[]): Promise<void> => {
-    return new Promise<void>((resolve, reject) => {
-        try {
+const createContent = async (diffContents: string[]): Promise<PagesCreateResponse[]> => {
+    try {
+        return await Promise.all(
             diffContents?.map(async diffcontent => {
-                await notion.pages.create({
+                return await notion.pages.create({
                     parent: { database_id: databaseId ? databaseId : ''},
                     properties: {
                         title: {
@@ -131,67 +130,45 @@ const createContent = (diffContents: string[]): Promise<void> => {
                         }
                     }
                 })
-                console.log('Create done!');
-                resolve()
-            });
-        } catch (error) {
-            if (error instanceof UnknownHTTPResponseError) {
-                console.log(error.body)
-                reject()
-            }
-        }
-    })
-}
-
-/**
- * 日直当番の日付をレコードに追加
- * @returns
- */
-const updateContentOfDate = async (): Promise<void> => {
-    // 各レコード行のidを取得
-    const pageIds = await queryPageIds()
-    // pageIdsが取得できなかった場合は早期リターン
-    if (pageIds == null || pageIds.length === 0) return
-    // 当月の平日一覧を取得
-    let weekdays = getWeekdays(dayjs().date(1))
-    // 平日数がレコード行数に満たない場合は来月分も取得
-    if (pageIds.length > weekdays.length) {
-        let weekdaysInNextMonth = getWeekdays(dayjs().date(1).add(1, 'month'))
-        weekdays = [...weekdays,...weekdaysInNextMonth]
-    } else if ( weekdays.length > pageIds.length ) {
-        // 平日数がレコード行数より多い場合は不足分のレコードを追加作成
-        const diff = weekdays.length - pageIds.length
-        if (diff <= 0) return
-        const diffContents = await queryDiffContents(diff)
-        if (diffContents == null) return
-        await createContent(diffContents)
-    }
-    
-    try {
-        // 追加分を含めた各レコード行のidを再取得
-        const allPageIds = await queryPageIds()
-        
-        // 各レコード行に日付を追加
-        allPageIds?.forEach( async (pageId, index) => {
-            await notion.pages.update({
-                page_id: pageId,
-                archived: false,
-                properties: {
-                    "Date": {
-                        type: 'date',
-                        date: {
-                            start: weekdays[index],
-                            end: undefined
-                        }
-                    }
-                }
             })
-        });
-        console.log("Success! Updated date.")
+        )
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
         }
+        throw error
+    }
+}
+
+/**
+ * 日直当番の日付を各行のDateプロパティに追加
+ * @returns
+ */
+const updateContentOfDate = async (pageIds: string[], weekdays: string[]): Promise<PagesUpdateResponse[]> => {    
+    try {
+        // 各行に日付を追加
+        return await Promise.all(
+            pageIds.map( async (pageId, index) => {
+                return await notion.pages.update({
+                    page_id: pageId,
+                    archived: false,
+                    properties: {
+                        "Date": {
+                            type: 'date',
+                            date: {
+                                start: weekdays[index],
+                                end: undefined
+                            }
+                        }
+                    }
+                })
+            })
+        )
+    } catch (error) {
+        if (error instanceof UnknownHTTPResponseError) {
+            console.log(error.body)
+        }
+        throw error
     }
 }
 
@@ -200,13 +177,12 @@ const updateContentOfDate = async (): Promise<void> => {
  * @param today - YYYY-MM-DD
  * @returns
  */
-const updateContentOfTodayTags = async (today: string): Promise<void> => {
-    const pageIds = await queryPageIds()
-    return new Promise<void>((resolve, reject) => {
-        try {
-            pageIds?.forEach( async (pageId) => {
+const updateContentOfTodayTags = async (pageIds: string[], today: string): Promise<PagesUpdateResponse[]> => {
+    try {
+        return await Promise.all(
+            pageIds.map( async pageId => {
                 if (await isToday(pageId, today)) {
-                    await notion.pages.update({
+                    return await notion.pages.update({
                         page_id: pageId,
                         archived: false,
                         properties: {
@@ -219,9 +195,8 @@ const updateContentOfTodayTags = async (today: string): Promise<void> => {
                             }
                         }
                     })
-                    resolve()
                 } else {
-                    await notion.pages.update({
+                    return await notion.pages.update({
                         page_id: pageId,
                         archived: false,
                         properties: {
@@ -232,21 +207,19 @@ const updateContentOfTodayTags = async (today: string): Promise<void> => {
                         }
                     })
                 }
-            });
-            console.log("Success! Updated tags.")
-        } catch (error) {
-            if (error instanceof UnknownHTTPResponseError) {
-                console.log(error.body)
-                reject()
-            }
+            })
+        )
+    } catch (error) {
+        if (error instanceof UnknownHTTPResponseError) {
+            console.log(error.body)
         }
-    })
-    
+        throw error
+    }
 }
 
 /**
  * 次回の日直を取得
- * @returns 日直タグが付与されているレコードの次の行のページオブジェクト
+ * @returns 日直タグが付与されている行の次の行のページオブジェクト
  */
 const queryNextMC = async (): Promise<Page> => {
     try {
@@ -279,10 +252,10 @@ const queryNextMC = async (): Promise<Page> => {
  * 次回の日直にタグを追加
  * @returns レスポンス
  */
-const updateContentOfNextTimeTags = async (): Promise<void> => {
+const updateContentOfNextTimeTags = async (): Promise<PagesUpdateResponse> => {
     const target = await queryNextMC()
     try {
-        await notion.pages.update({
+        return await notion.pages.update({
             page_id: target.id,
             archived: false,
             properties: {
@@ -295,7 +268,6 @@ const updateContentOfNextTimeTags = async (): Promise<void> => {
                 }
             }
         })
-        console.log("Success! Updated next MC.")
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
@@ -305,18 +277,30 @@ const updateContentOfNextTimeTags = async (): Promise<void> => {
 }
 
 (async () => {
-    await updateContentOfDate()
-    await updateContentOfTodayTags(dayjs().format('YYYY-MM-DD'))
+    // 各行のidを取得
+    let pageIds = await queryPageIds()
+    // 当月の平日一覧を取得
+    let weekdays = getWeekdays(dayjs().date(1))
+    // 平日数が人数に満たない場合は来月分も取得
+    if (pageIds.length > weekdays.length) {
+        let weekdaysInNextMonth = getWeekdays(dayjs().date(1).add(1, 'month'))
+        weekdays = [...weekdays,...weekdaysInNextMonth]
+    }
+    // 平日数が人数より多い場合は不足分を行の先頭から追加して補完
+    if ( weekdays.length > pageIds.length ) {
+        const diff = weekdays.length - pageIds.length
+        if (diff <= 0) return
+        const diffContents = await queryDiffContents(pageIds, diff)
+        await createContent(diffContents)
+        console.log('Create done!');
+        // 追加分を含めた各行のidを再取得
+        pageIds = await queryPageIds()
+    }
+    
+    await updateContentOfDate(pageIds, weekdays)
+    console.log("Success! Updated date.")
+    await updateContentOfTodayTags(pageIds, dayjs().format('YYYY-MM-DD'))
+    console.log("Success! Updated tags.")
     await updateContentOfNextTimeTags()
+    console.log("Success! Updated next MC.")
 })()
-
-/**
- * ユーザー一覧を取得
- * @returns {void}
- */
-// const getUserList = async () => {
-//     const response = await notion.users.list();
-//     console.log(response);
-// };
-
-// getUserList()
