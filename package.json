@@ -5,7 +5,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "functions-framework --target=update --source=dist/",
+    "start": "functions-framework --target=update",
+    "debug": "node --inspect node_modules/@google-cloud/functions-framework --target=update",
     "build": "tsc",
     "dev": "tsc -w",
     "deploy:dev": "gcloud functions deploy mc_calendar-dev --entry-point update --runtime nodejs14 --trigger-http --allow-unauthenticated --region asia-northeast2 --memory 512MB --timeout 360",
