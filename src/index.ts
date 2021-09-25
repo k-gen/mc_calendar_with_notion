@@ -14,18 +14,28 @@ const notion = new Client({ auth: process.env.NOTION_KEY })
 const databaseId = process.env.NOTION_DATABASE_ID
 
 /**
- * 各行のID(ページID)のリストを取得
- * @returns pageIdのリスト
+ * ページの一覧を取得
+ * @returns Pageの配列
  */
-const queryPageIds = async (): Promise<string[]> => {
+const queryPages = async (): Promise<Page[]> => {
     try {
         const response = await notion.databases.query({
             database_id: databaseId != null ? databaseId : "",
+            sorts: [
+                {
+                    property: "Clone",
+                    direction: "ascending"
+                },
+                {
+                    property: "Date",
+                    direction: "ascending"
+                }
+            ]
         });
-        const pageIds = response.results.map(result => {
-            return result.id
+        const pages = response.results.map(result => {
+            return result
         })
-        return pageIds
+        return pages
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
@@ -87,18 +97,19 @@ const getWeekdays = (dayjs: Dayjs): string[] => {
  * @param diff - 当月の平日数と行数(人数)の差
  * @returns 差分コンテンツのタイトルのリスト
  */
-const queryDiffContents = async (pageIds: string[], diff: number): Promise<string[]> => {
-    const diffPageIds = pageIds.slice(-diff)
+const queryDiffContents = async (pages: Page[], diff: number): Promise<string[]> => {
     try {
-        const response = await notion.databases.query({
-            database_id: databaseId ? databaseId : ''
-        })
-        const diffContent = response.results.filter(result => {
-            return diffPageIds?.includes(result.id)
-        }).map(result => {
-            return (result.properties.Name as TitlePropertyValue).title[0].plain_text
-        })
-        return diffContent
+        // cloneされた行を取得
+        const clonePages = await queryClonePage()
+        if(clonePages.length) {
+            return pages.map(page => {
+                return (page.properties.Name as TitlePropertyValue).title[0].plain_text
+            }).slice(clonePages.length, clonePages.length + diff) // slice(15, 20) // ゆうき, やすひこ, ももこ, ののか
+        } else {
+            return pages.slice(0, diff).map(page => {
+                return (page.properties.Name as TitlePropertyValue).title[0].plain_text
+            })
+        }
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
@@ -115,16 +126,56 @@ const queryDiffContents = async (pageIds: string[], diff: number): Promise<strin
 const createContent = async (diffContents: string[]): Promise<PagesCreateResponse[]> => {
     try {
         return await Promise.all(
-            diffContents?.map(async diffcontent => {
-                return await notion.pages.create({
+            diffContents.map(async (diffContent, index) => {
+                const response = notion.pages.create({
                     parent: { database_id: databaseId ? databaseId : ''},
+                    properties: {
+                        "Clone": {
+                            type: "checkbox",
+                            checkbox: true
+                        }
+                    }
+                })
+                console.log(`${diffContent}copy${index} id added!`);
+                return response
+            })
+        )
+    } catch (error) {
+        if (error instanceof UnknownHTTPResponseError) {
+            console.log(error.body)
+        }
+        throw error
+    }
+}
+
+/**
+ * 複製されたページに名前を設定
+ * @param diffContents 
+ * @returns 
+ */
+const updateContentOfName = async (diffContents: string[]): Promise<PagesUpdateResponse[]> => {
+    try {
+        const response = await notion.databases.query({
+            database_id: databaseId ? databaseId : '',
+            filter: {
+                property: "Clone",
+                checkbox: {
+                    equals: true
+                }
+            }
+        })
+        return await Promise.all(
+            diffContents.map( async (diffContent, index) => {
+                return await notion.pages.update({
+                    page_id: response.results[index].id,
+                    archived: false,
                     properties: {
                         title: {
                             type: "title",
                             title: [{
                                 "type": "text",
                                 "text": {
-                                    "content": diffcontent
+                                    "content": diffContent
                                 }
                             }]
                         }
@@ -141,16 +192,169 @@ const createContent = async (diffContents: string[]): Promise<PagesCreateRespons
 }
 
 /**
+ * 複製されたページの一覧を取得
+ * @returns 
+ */
+const queryClonePage = async (): Promise<Page[]> => {
+    try {
+        const response = await notion.databases.query({
+            database_id: databaseId ? databaseId : '',
+            filter: {
+                property: "Clone",
+                checkbox: {
+                    equals: true
+                }
+            }
+        })
+        return response.results
+    } catch (error) {
+        if (error instanceof UnknownHTTPResponseError) {
+            console.log(error.body)
+        }
+        throw error
+    }
+}
+
+/**
+ * 削除対象とするページの一覧を取得
+ * @param pages 
+ * @returns 
+ */
+const queryDeletePages = async (pages: Page[]): Promise<Page[] | undefined> => {
+    try {
+        const clonePages = await queryClonePage()
+        if (clonePages.length === 0) return
+        // クローンされた行の最後のコンテンツの名前（翌月の最初の営業日）
+        const targetName = (clonePages.slice(-1)[0].properties.Name as TitlePropertyValue).title[0].plain_text
+        // 削除対象のページ一覧を検査
+        let deletePages: Page[] = []
+        pages.some( page => {
+            const name = (page.properties.Name as TitlePropertyValue).title[0].plain_text
+            if (name === targetName) {
+                return true
+            }
+            deletePages.push(page)
+        })
+        return deletePages
+    } catch (error) {
+        if (error instanceof UnknownHTTPResponseError) {
+            console.log(error.body)
+        }
+        throw error
+    }   
+}
+
+/**
+ * 月が替わる際に重複するページを削除
+ * @param pages 
+ * @param diffContens 
+ * @returns 
+ */
+const deletePages = async (pages: Page[], diffContens: string[]): Promise<(PagesUpdateResponse | undefined)[]> => {
+    try {
+        // 削除対象のページ一覧を取得
+        const deletePages = await queryDeletePages(pages)
+        // 削除対象のページが0の場合（最初と最後が同じ名前の場合）Cloneのcheckboxをリセットする
+        if (deletePages?.length === 0) {
+            const cloneIds = (await queryClonePage()).map(page => {
+                return page.id
+            })
+            // Cloneのcheckboxをリセット
+            await Promise.all(cloneIds.map( async cloneId => {
+                const response = await notion.pages.update({
+                    page_id: cloneId,
+                    archived: false,
+                    properties: {
+                        "Clone": {
+                            type: "checkbox",
+                            checkbox: false
+                        }
+                    }
+                })
+                return response
+            }))
+            // 複製ページの最終行が先頭と重複しているため削除
+            await notion.pages.update({
+                page_id: cloneIds.slice(-1)[0],
+                archived: true,
+                properties: {}
+            })
+        }
+        // 最初の行のコンテンツの名前
+        const targetName = (pages[0].properties.Name as TitlePropertyValue).title[0].plain_text
+        // 複製された行の一覧を取得
+        const clonePages = await queryClonePage()
+        // 複製行の一覧とページ一覧の最初の行を比較して名前が一致するまで配列に追加する
+        clonePages.some(clonePage => {
+            const name = (clonePage.properties.Name as TitlePropertyValue).title[0].plain_text
+            if (name === targetName) {
+                return true
+            }
+            diffContens.push((clonePage.properties.Name as TitlePropertyValue).title[0].plain_text)
+        })
+        return await Promise.all(
+            pages.map( async (page, index) => {
+                if (deletePages != null && page.id === deletePages[index]?.id) {
+                    diffContens.push((page.properties.Name as TitlePropertyValue).title[0].plain_text)
+                    return await notion.pages.update({
+                        page_id: page.id,
+                        archived: true,
+                        properties: {}
+                    })
+                }
+            })
+        )
+    } catch (error) {
+        if (error instanceof UnknownHTTPResponseError) {
+            console.log(error.body)
+        }
+        throw error
+    }
+}
+
+/**
+ * 複製された行を削除
+ * @returns Promise<PagesUpdateResponse[]>
+ */
+const deleteClone = async (): Promise<PagesUpdateResponse[]> => {
+    try {
+        const response = await notion.databases.query({
+            database_id: databaseId ? databaseId : '',
+            filter: {
+                property: "Clone",
+                checkbox: {
+                    equals: true
+                }
+            }
+        })
+        return await Promise.all(
+            response.results.map( async result => {
+                return await notion.pages.update({
+                    page_id: result.id,
+                    archived: true,
+                    properties: {}
+                })                
+            })
+        )
+    } catch (error) {
+        if (error instanceof UnknownHTTPResponseError) {
+            console.log(error.body)
+        }
+        throw error
+    }   
+}
+
+/**
  * 日直当番の日付を各行のDateプロパティに追加
  * @returns PagesUpdateResponse
  */
-const updateContentOfDate = async (pageIds: string[], weekdays: string[]): Promise<PagesUpdateResponse[]> => {    
+const updateContentOfDate = async (pages: Page[], weekdays: string[]): Promise<PagesUpdateResponse[]> => {    
     try {
         // 各行に日付を追加
         return await Promise.all(
-            pageIds.map( async (pageId, index) => {
+            pages.map( async (page, index) => {
                 return await notion.pages.update({
-                    page_id: pageId,
+                    page_id: page.id,
                     archived: false,
                     properties: {
                         "Date": {
@@ -177,13 +381,13 @@ const updateContentOfDate = async (pageIds: string[], weekdays: string[]): Promi
  * @param today - YYYY-MM-DD
  * @returns PagesUpdateResponse
  */
-const updateContentOfTodayTags = async (pageIds: string[], today: string): Promise<PagesUpdateResponse[]> => {
+const updateContentOfTodayTags = async (pages: Page[], today: string): Promise<PagesUpdateResponse[]> => {
     try {
         return await Promise.all(
-            pageIds.map( async pageId => {
-                if (await isToday(pageId, today)) {
+            pages.map( async page => {
+                if (await isToday(page.id, today)) {
                     return await notion.pages.update({
-                        page_id: pageId,
+                        page_id: page.id,
                         archived: false,
                         properties: {
                             "Tags": {
@@ -197,7 +401,7 @@ const updateContentOfTodayTags = async (pageIds: string[], today: string): Promi
                     })
                 } else {
                     return await notion.pages.update({
-                        page_id: pageId,
+                        page_id: page.id,
                         archived: false,
                         properties: {
                             "Tags": {
@@ -280,30 +484,54 @@ const updateContentOfNextTimeTags = async (today: string): Promise<PagesUpdateRe
     }
 }
 
-(async () => {
-    const today = dayjs().format('YYYY-MM-DD')
-    // 各行のidを取得
-    let pageIds = await queryPageIds()
+/**
+ * 初期化処理
+ * @param today 
+ * @returns 
+ */
+const init = async (today: string) => {
+    // ページオブジェクト一覧を取得
+    let pages = await queryPages()
     // 当月の平日一覧を取得
     let weekdays = getWeekdays(dayjs(today).date(1))
-    // 平日数が人数に満たない場合は来月分も取得
-    if (pageIds.length > weekdays.length) {
-        let weekdaysInNextMonth = getWeekdays(dayjs(today).date(1).add(1, 'month'))
-        weekdays = [...weekdays,...weekdaysInNextMonth]
+    // 翌月の平日一覧を取得
+    const weekdaysInNextMonth = getWeekdays(dayjs(today).date(1).add(1, 'month'))
+    // 差分コンテンツの配列を初期化
+    let diffContents: string[] = []
+    // 月が替わる場合は重複ページ（名前）と複製ページを削除する
+    if (dayjs(today).date() === 1) {
+        await deletePages(pages, diffContents)
+        await deleteClone()
+        console.log("Clone contents has deleted!");
+        pages = await queryPages()
     }
-    // 平日数が人数より多い場合は不足分を行の先頭から追加して補完
-    else if (weekdays.length > pageIds.length) {
-        const diff = weekdays.length - pageIds.length
-        const diffContents = await queryDiffContents(pageIds, diff)
+    // 平日が人数より多い場合はページを複製してカレンダーを埋める
+    if (weekdays.length >= pages.length) {
+        // 翌月の第1営業日までカレンダーに含めるため差分数に1を加えておく
+        // 3月: 22 - 18 - 0 + 1 = 5
+        const diff = weekdays.length - pages.length - diffContents.length + 1
+        diffContents = [...diffContents, ...await queryDiffContents(pages, diff)]
         await createContent(diffContents)
+        await updateContentOfName(diffContents)
         console.log(`${diffContents.length} items has created.`);
-        // 追加分を含めた各行のidを再取得
-        pageIds = await queryPageIds()
+        // 追加分を含めたページ一覧を再取得
+        pages = await queryPages()
     }
-    
-    await updateContentOfDate(pageIds, weekdays)
+    // 配列に翌月の平日を追加
+    weekdays = [...weekdays,...weekdaysInNextMonth]
+
+    return {
+        pages,
+        weekdays
+    }
+}
+
+(async () => {
+    const today = dayjs().format('YYYY-MM-DD')
+    const {pages, weekdays} = await init(today)
+    await updateContentOfDate(pages, weekdays)
     console.log("Success! Updated date.")
-    await updateContentOfTodayTags(pageIds, today)
+    await updateContentOfTodayTags(pages, today)
     console.log("Success! Updated tags.")
     await updateContentOfNextTimeTags(today)
     console.log("Success! Updated next MC.")
