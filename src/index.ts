@@ -508,7 +508,6 @@ const init = async (today: string) => {
     // 平日が人数より多い場合はページを複製してカレンダーを埋める
     if (weekdays.length >= pages.length) {
         // 翌月の第1営業日までカレンダーに含めるため差分数に1を加えておく
-        // 3月: 22 - 18 - 0 + 1 = 5
         const diff = weekdays.length - pages.length - diffContents.length + 1
         diffContents = [...diffContents, ...await queryDiffContents(pages, diff)]
         await createContent(diffContents)
