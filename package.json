@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node ./dist/index.js",
+    "start": "functions-framework --target=update --source=dist/",
     "build": "tsc",
     "dev": "tsc -w"
   },
@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/functions-framework": "^1.9.0",
     "@holiday-jp/holiday_jp": "^2.3.0",
     "@notionhq/client": "^0.3.1",
     "dayjs": "^1.10.6",

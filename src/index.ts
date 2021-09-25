@@ -525,13 +525,16 @@ const init = async (today: string) => {
     }
 }
 
-(async () => {
-    const today = dayjs().format('YYYY-MM-DD')
-    const {pages, weekdays} = await init(today)
-    await updateContentOfDate(pages, weekdays)
-    console.log("Success! Updated date.")
-    await updateContentOfTodayTags(pages, today)
-    console.log("Success! Updated tags.")
-    await updateContentOfNextTimeTags(today)
-    console.log("Success! Updated next MC.")
-})()
+export function update (req, res) {
+    (async () => {
+        const today = dayjs().format('YYYY-MM-DD')
+        const {pages, weekdays} = await init(today)
+        await updateContentOfDate(pages, weekdays)
+        console.log("Success! Updated date.")
+        await updateContentOfTodayTags(pages, today)
+        console.log("Success! Updated tags.")
+        await updateContentOfNextTimeTags(today)
+        console.log("Success! Updated next MC.")
+        res.send('finish');
+    })()
+};
