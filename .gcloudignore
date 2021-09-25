@@ -1,0 +1,14 @@
+# Directory
+.git/
+.vscode/
+node_modules/
+src
+# File
+.env
+.env.example
+.gitignore
+.gcloudignore
+*.md
+*.json
+!package.json
+*.map

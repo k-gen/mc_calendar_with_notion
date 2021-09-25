@@ -7,7 +7,9 @@
   "scripts": {
     "start": "functions-framework --target=update --source=dist/",
     "build": "tsc",
-    "dev": "tsc -w"
+    "dev": "tsc -w",
+    "deploy:dev": "gcloud functions deploy mc_calendar-dev --entry-point update --runtime nodejs14 --trigger-http --allow-unauthenticated --region asia-northeast2 --memory 512MB --timeout 360",
+    "deploy:prod": "gcloud functions deploy mc_calendar --entry-point update --runtime nodejs14 --trigger-http --allow-unauthenticated --region asia-northeast2 --memory 512MB --timeout 360"
   },
   "keywords": [],
   "author": "",
