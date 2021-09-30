@@ -3,6 +3,7 @@
 .vscode/
 node_modules/
 src
+**/__tests__/**
 # File
 .env
 .env.example
@@ -12,3 +13,5 @@ src
 *.json
 !package.json
 *.map
+jest.config.js
+*.test.js
