@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
       "target": "ES2015",
-      "module": "ES2015",
+      "module": "ES2020",
       "outDir": "./dist",
       "strict": true,
       "noImplicitAny": false,
@@ -10,5 +10,5 @@
       "esModuleInterop": true,
       "sourceMap": true
     },
-    "include": ["./src/**/*"]
+    "include": ["./src/**/*", "src/utils/utils.test.ts"]
 }
