@@ -105,7 +105,7 @@ export const queryDiffContents = async (pages: Page[], diff: number): Promise<st
         if(clonePages.length) {
             return pages.map(page => {
                 return (page.properties.Name as TitlePropertyValue).title[0].plain_text
-            }).slice(clonePages.length, clonePages.length + diff) // slice(15, 20) // ゆうき, やすひこ, ももこ, ののか
+            }).slice(clonePages.length, clonePages.length + diff)
         } else {
             return pages.slice(0, diff).map(page => {
                 return (page.properties.Name as TitlePropertyValue).title[0].plain_text
