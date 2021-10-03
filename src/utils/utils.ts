@@ -1,6 +1,6 @@
 import { notion } from '../config/index.js'
 import { UnknownHTTPResponseError } from "@notionhq/client"
-import { DatePropertyValue } from '@notionhq/client/build/src/api-types'
+import { DatePropertyValue, Page, TitlePropertyValue } from '@notionhq/client/build/src/api-types'
 import dayjs, { Dayjs } from 'dayjs'
 import holiday_jp from '@holiday-jp/holiday_jp'
 
@@ -50,4 +50,16 @@ import holiday_jp from '@holiday-jp/holiday_jp'
         }
     }
     return weekdays
+}
+
+/**
+ * 差分コンテンツの取得
+ * @param pages - ページオブジェクトの一覧
+ * @param diff - 当月の平日数と行数(人数)の差
+ * @returns 差分コンテンツのタイトルのリスト
+ */
+ export const getDiffContents = (pages: Page[], diff: number): string[] => {
+    return pages.slice(0, diff).map(page => {
+        return (page.properties.Name as TitlePropertyValue).title[0].plain_text
+    })
 }

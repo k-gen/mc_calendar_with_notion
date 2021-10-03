@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
-import { getWeekdays } from '../utils/index.js'
-import { queryPages, queryDiffContents } from './query_pages.js'
+import { getWeekdays, getDiffContents } from '../utils/index.js'
+import { queryPages } from './query_pages.js'
 import { deleteClone, deletePages, updateContentOfName } from './update_pages.js'
 import { createContent } from './create_pages.js'
 
@@ -20,7 +20,7 @@ export const init = async (today: string) => {
     let diffContents: string[] = []
     // 月が替わる場合は重複ページ（名前）と複製ページを削除する
     if (dayjs(today).date() === 1) {
-        await deletePages(pages, diffContents)
+        await deletePages(pages)
         await deleteClone()
         console.log("Clone contents has deleted!");
         pages = await queryPages()
@@ -29,7 +29,7 @@ export const init = async (today: string) => {
     if (weekdays.length >= pages.length) {
         // 翌月の第1営業日までカレンダーに含めるため差分数に1を加えておく
         const diff = weekdays.length - pages.length - diffContents.length + 1
-        diffContents = [...diffContents, ...await queryDiffContents(pages, diff)]
+        diffContents = [...diffContents, ...getDiffContents(pages, diff)]
         await createContent(diffContents)
         await updateContentOfName(diffContents)
         console.log(`${diffContents.length} items has created.`);

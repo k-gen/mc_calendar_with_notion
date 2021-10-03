@@ -3,7 +3,7 @@ import { TitlePropertyValue, Page } from '@notionhq/client/build/src/api-types'
 import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import { UnknownHTTPResponseError } from "@notionhq/client"
 import { isToday } from '../utils/index.js'
-import { queryNextMC, queryClonePage, queryDeletePages } from './query_pages.js'
+import { queryNextMC, queryClonePage } from './query_pages.js'
 
 /**
  * 日直当番の日付を各行のDateプロパティに追加
@@ -159,19 +159,24 @@ export const updateContentOfName = async (diffContents: string[]): Promise<Pages
  * @param diffContens 
  * @returns 
  */
-export const deletePages = async (pages: Page[], diffContens: string[]): Promise<(PagesUpdateResponse | undefined)[]> => {
+export const deletePages = async (pages: Page[]): Promise<(PagesUpdateResponse | undefined)[]> => {
     try {
-        // 削除対象のページ一覧を取得
-        const deletePages = await queryDeletePages(pages)
-        // 削除対象のページが0の場合（最初と最後が同じ名前の場合）Cloneのcheckboxをリセットする
-        if (deletePages?.length === 0) {
-            const cloneIds = (await queryClonePage()).map(page => {
-                return page.id
-            })
-            // Cloneのcheckboxをリセット
-            await Promise.all(cloneIds.map( async cloneId => {
-                const response = await notion.pages.update({
-                    page_id: cloneId,
+        // 削除対象のページ一覧を初期化
+        let deletePages: Page[] = []
+        // 複製ページ一覧を取得
+        const clonePages = await queryClonePage()
+        // 複製ページが存在する場合はカレンダーの先頭がずれた分の複製のチェックを外す
+        if (clonePages.length) {
+            // クローンされた行の最後のコンテンツの名前（翌月の最初の営業日）
+            const targetName = (clonePages.slice(-1)[0].properties.Name as TitlePropertyValue).title[0].plain_text
+            pages.some( (page, index) => {
+                const name = (page.properties.Name as TitlePropertyValue).title[0].plain_text
+                if (name === targetName) {
+                    return true
+                }
+                deletePages.push(page)
+                notion.pages.update({
+                    page_id: clonePages[index].id,
                     archived: false,
                     properties: {
                         "Clone": {
@@ -180,31 +185,11 @@ export const deletePages = async (pages: Page[], diffContens: string[]): Promise
                         }
                     }
                 })
-                return response
-            }))
-            // 複製ページの最終行が先頭と重複しているため削除
-            await notion.pages.update({
-                page_id: cloneIds.slice(-1)[0],
-                archived: true,
-                properties: {}
             })
         }
-        // 最初の行のコンテンツの名前
-        const targetName = (pages[0].properties.Name as TitlePropertyValue).title[0].plain_text
-        // 複製された行の一覧を取得
-        const clonePages = await queryClonePage()
-        // 複製行の一覧とページ一覧の最初の行を比較して名前が一致するまで配列に追加する
-        clonePages.some(clonePage => {
-            const name = (clonePage.properties.Name as TitlePropertyValue).title[0].plain_text
-            if (name === targetName) {
-                return true
-            }
-            diffContens.push((clonePage.properties.Name as TitlePropertyValue).title[0].plain_text)
-        })
         return await Promise.all(
             pages.map( async (page, index) => {
-                if (deletePages != null && page.id === deletePages[index]?.id) {
-                    diffContens.push((page.properties.Name as TitlePropertyValue).title[0].plain_text)
+                if (page.id === deletePages[index]?.id) {
                     return await notion.pages.update({
                         page_id: page.id,
                         archived: true,
