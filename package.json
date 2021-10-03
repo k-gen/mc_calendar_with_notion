@@ -9,7 +9,7 @@
     "debug": "node --inspect node_modules/@google-cloud/functions-framework --target=update",
     "build": "tsc",
     "dev": "tsc -w",
-    "test": "jest",
+    "test": "jest --verbose",
     "deploy:dev": "gcloud functions deploy mc_calendar-dev --entry-point update --runtime nodejs14 --trigger-http --allow-unauthenticated --region asia-northeast2 --memory 512MB --timeout 360",
     "deploy:prod": "gcloud functions deploy mc_calendar --entry-point update --runtime nodejs14 --trigger-http --allow-unauthenticated --region asia-northeast2 --memory 512MB --timeout 360"
   },
