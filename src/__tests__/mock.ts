@@ -1,3 +1,7 @@
+import { UnknownHTTPResponseError } from "@notionhq/client"
+import { PagesCreateResponse } from "@notionhq/client/build/src/api-endpoints"
+import { notion, databaseId } from "../config/index.js"
+
 export const today = {
     object: "page",
     id: "b0b1467f-b5c1-40f2-8d9c-3576e8c28be5",
@@ -1269,3 +1273,64 @@ export const pages = {
         // },
     ]
 }
+
+const memberList = [
+"よしこ",
+"あおい",
+"けんた",
+"じろう",
+"ようこ",
+"ゆうた",
+"けいこ",
+"ゆうき",
+"ゆきお",
+"ひろこ",
+"ももこ",
+"やすひこ",
+"けんじ",
+"まゆみ",
+"みつる",
+"しげる",
+"ののか",
+"たかし",
+"ノビタ",
+"ジャイアン",
+"スネオ",
+"シズカ"
+]
+
+/**
+ * テスト用のモックページをデータベース内に作成
+ * @returns PagesCreateResponse[]
+ */
+const factoryMockData = async (): Promise<PagesCreateResponse[]> => {
+  try {
+    return await Promise.all(
+        memberList.map(async member => {
+            const response = notion.pages.create({
+                parent: { database_id: databaseId ? databaseId : ''},
+                properties: {
+                  title: {
+                      type: "title",
+                      title: [{
+                          "type": "text",
+                          "text": {
+                              "content": member
+                          }
+                      }]
+                  }
+              }
+            })
+            return response
+        })
+    )
+  } catch (error) {
+      if (error instanceof UnknownHTTPResponseError) {
+          console.log(error.body)
+      }
+      throw error
+  }
+}
+(async () => {
+  await factoryMockData()
+})()

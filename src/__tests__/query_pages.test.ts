@@ -1,5 +1,6 @@
 import { notion } from '../config'
-import * as query_pages from "../modules/query_pages"
+import { queryPages } from "../modules/query_pages"
+import { getDiffContents } from '../utils';
 import * as mock from "./mock"
 
 describe("query_pages.queryDiffContents", () => {
@@ -15,8 +16,8 @@ describe("query_pages.queryDiffContents", () => {
     //     await query_pages.queryDiffContents([], Infinity)
     // })
     test("1", async () => {
-        let pages = await query_pages.queryPages()
-        const result = await query_pages.queryDiffContents(pages, 3)
+        let pages = await queryPages()
+        const result = await getDiffContents(pages, 3)
         expect(pages).toEqual(mock.pages.results)
         expect(result.length).toBe(3)
         expect(result).toStrictEqual(["ももこ","ののか","ようこ"])

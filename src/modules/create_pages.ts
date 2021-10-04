@@ -1,15 +1,17 @@
 import { notion, databaseId } from '../config/index.js'
-import { PagesCreateResponse } from "@notionhq/client/build/src/api-endpoints";
+import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import { UnknownHTTPResponseError } from "@notionhq/client"
+import { updateContentOfName } from './update_pages.js';
+import { queryPages } from './query_pages.js';
 
 /**
  * 差分コンテンツをデータベースに追加
  * @param diffContents - 差分コンテンツのタイトル名
- * @returns PagesCreateResponse
+ * @returns PagesCreateResponse[]
  */
-export const createContent = async (diffContents: string[]): Promise<PagesCreateResponse[]> => {
+export const createClone = async (diffContents: string[]): Promise<PagesUpdateResponse[]> => {
     try {
-        return await Promise.all(
+        await Promise.all(
             diffContents.map(async (diffContent, index) => {
                 const response = notion.pages.create({
                     parent: { database_id: databaseId ? databaseId : ''},
@@ -20,10 +22,11 @@ export const createContent = async (diffContents: string[]): Promise<PagesCreate
                         }
                     }
                 })
-                console.log(`${diffContent}copy${index} id added!`);
                 return response
             })
         )
+        await updateContentOfName(diffContents)
+        return await queryPages()
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
