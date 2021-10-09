@@ -23,10 +23,7 @@ export const queryPages = async (): Promise<Page[]> => {
                 }
             ]
         });
-        const pages = response.results.map(result => {
-            return result
-        })
-        return pages
+        return response.results
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
@@ -66,13 +63,13 @@ export const queryClonePage = async (): Promise<Page[]> => {
  */
 export const queryPageByfirstWeekdayInThisMonth = async (today: string): Promise<Page[]> => {
     try {
-        const firstWeekdayInNextMonth = getWeekdays(dayjs(today).date(1))[0]
+        const firstWeekdayInThisMonth = getWeekdays(dayjs(today).date(1))[0]
         const response = await notion.databases.query({
             database_id: databaseId != null ? databaseId : "",
             filter: {
                 property: "Date",
                 date: {
-                    equals: firstWeekdayInNextMonth
+                    equals: firstWeekdayInThisMonth
                 }
             }
         });

@@ -1,7 +1,7 @@
 import { notion, databaseId } from '../config/index.js'
 import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import { UnknownHTTPResponseError } from "@notionhq/client"
-import { updateContentOfName } from './update_pages.js';
+import { updateNameOfClonePage } from './update_pages.js';
 import { queryPages } from './query_pages.js';
 
 /**
@@ -13,7 +13,7 @@ export const createClone = async (diffContents: string[]): Promise<PagesUpdateRe
     try {
         await Promise.all(
             diffContents.map(async (diffContent, index) => {
-                const response = notion.pages.create({
+                return notion.pages.create({
                     parent: { database_id: databaseId ? databaseId : ''},
                     properties: {
                         "Clone": {
@@ -22,10 +22,9 @@ export const createClone = async (diffContents: string[]): Promise<PagesUpdateRe
                         }
                     }
                 })
-                return response
             })
         )
-        await updateContentOfName(diffContents)
+        await updateNameOfClonePage(diffContents)
         return await queryPages()
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {

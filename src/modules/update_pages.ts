@@ -1,5 +1,5 @@
 import { notion } from '../config/index.js'
-import { Page } from '@notionhq/client/build/src/api-types'
+import { Page, TitlePropertyValue } from '@notionhq/client/build/src/api-types'
 import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import { UnknownHTTPResponseError } from "@notionhq/client"
 import { isToday } from '../utils/index.js'
@@ -115,11 +115,46 @@ export const updateContentOfNextTimeTags = async (today: string): Promise<PagesU
 }
 
 /**
+ * ソート結果に合わせて名前を更新
+ * @param pages 
+ * @param sortPages 
+ * @returns PagesUpdateResponse[]
+ */
+export const updateContentOfName = async (pages: Page[], sortPages: Page[]): Promise<PagesUpdateResponse[]> => {
+    try {
+        return await Promise.all(
+            pages.map(async (page, index) => {
+                return await notion.pages.update({
+                    page_id: page.id,
+                    archived: false,
+                    properties: {
+                        title: {
+                            type: "title",
+                            title: [{
+                                "type": "text",
+                                "text": {
+                                    "content": (sortPages[index].properties.Name as TitlePropertyValue).title[0].plain_text
+                                }
+                            }]
+                        }
+                    }
+                })
+            })
+        )
+    } catch (error) {
+        if (error instanceof UnknownHTTPResponseError) {
+            console.log(error.body)
+        }
+        throw error
+    }
+}
+
+/**
  * 複製されたページに名前を設定
  * @param diffContents 
  * @returns PagesUpdateResponse[]
  */
-export const updateContentOfName = async (diffContents: string[]): Promise<PagesUpdateResponse[]> => {
+export const updateNameOfClonePage = async (diffContents: string[]): Promise<PagesUpdateResponse[]> => {
     try {
         const clonePages = await queryClonePage()
         return await Promise.all(

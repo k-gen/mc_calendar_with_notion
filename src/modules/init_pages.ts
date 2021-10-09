@@ -1,11 +1,11 @@
 import dayjs from 'dayjs'
 import { getWeekdays, getDiffContents } from '../utils/index.js'
 import { queryClonePage, queryPageByfirstWeekdayInThisMonth, queryPages } from './query_pages.js'
-import { deleteCheckbox } from './delete_pages.js'
+import { deleteClone } from './delete_pages.js'
 import { createClone } from './create_pages.js'
 import { UnknownHTTPResponseError } from '@notionhq/client'
-import { Page, TitlePropertyValue } from '@notionhq/client/build/src/api-types'
-import { notion } from '../config/index.js'
+import { Page } from '@notionhq/client/build/src/api-types'
+import { updateContentOfName } from './update_pages.js'
 
 /**
  * ページの並び替え
@@ -13,50 +13,29 @@ import { notion } from '../config/index.js'
  * @param today 
  * @returns Page[]
  */
- const sortingPages = async (pages: Page[], today: string): Promise<Page[]> => {
+ const sortPages = async (pages: Page[], today: string): Promise<Page[]> => {
     try {
-        // 差分コンテンツの配列を初期化
-        let diffContents: string[] = []
-        // 削除対象のページ一覧を初期化
-        let deletePages: Page[] = []        
-        // 次に先頭になるページidを取得（当月の最初の営業日）
-        const targetPageId = (await queryPageByfirstWeekdayInThisMonth(today))[0]?.id
-        // 現在の先頭から次に先頭になるページまでを削除対象に追加
-        if (targetPageId) {
+        let sortPages: Page[] = []        
+        // 次に先頭になるページのpage_idを取得（今月の第1営業日）
+        const startPageId = (await queryPageByfirstWeekdayInThisMonth(today))[0]?.id
+        // 次に先頭になるページの直前までを配列に追加
+        if (startPageId) {
             pages.some( page => {
-                const id = page.id
-                if (id === targetPageId) {
-                    return true
-                }
-                deletePages.push(page)
+                if (page.id === startPageId) return true
+                sortPages.push(page)
             })
         }
-        // 複製ページが存在する場合はカレンダーの先頭がずれた分の複製のチェックを外す
+        const startPages = pages.slice(sortPages.length, pages.length)
         const clonePages = await queryClonePage()
-        // 削除対象のページを削除
-        await Promise.all(
-            deletePages.map( async deletePage => {
-                return await notion.pages.update({
-                    page_id: deletePage.id,
-                    archived: true,
-                    properties: {}
-                })
-            })
-        )
-        // 複製チェックを解除
-        await deleteCheckbox()
-        // 複製ページの数だけ削除対象リストから除外する
         if (clonePages.length) {
-            diffContents = deletePages.slice(clonePages.length, deletePages.length).map(deletePage => {
-                return (deletePage.properties.Name as TitlePropertyValue).title[0].plain_text
-            })
+            const sortPagesWithExcludedClonePages = sortPages.slice(clonePages.length, sortPages.length)
+            sortPages = [...startPages, ...sortPagesWithExcludedClonePages]
+            await deleteClone(clonePages)
+            pages = await queryPages()
         } else {
-            diffContents = deletePages.map(deletePage => {
-                return (deletePage.properties.Name as TitlePropertyValue).title[0].plain_text
-            })
+            sortPages = [...startPages, ...sortPages]
         }
-        await createClone(diffContents)
-        await deleteCheckbox()
+        await updateContentOfName(pages, sortPages)
         return await queryPages()
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
@@ -82,8 +61,8 @@ export const init = async (today: string) => {
     // カレンダー更新処理
     if (dayjs(today).date() === 1) {
         // ページの並び替え
-        pages = await sortingPages(pages, today)
-        // ページ数が平日数に満たない場合は先頭からメンバーを複製
+        pages = await sortPages(pages, today)
+        // ページ数が平日数に満たない場合は先頭から順にページを複製
         if (weekdays.length >= pages.length) {
             // 翌月の第1営業日までカレンダーに含めるため差分数に1を加えておく
             const diff = (weekdays.length + 1) - pages.length
