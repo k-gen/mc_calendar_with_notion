@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
-import { init } from "../modules/init_pages";
-import { updateContentOfDate, updateContentOfTodayTags, updateContentOfNextTimeTags } from '../modules/update_pages';
+import { init } from "../modules/initPages";
+import { updateContentOfDate, updateContentOfTodayTags, updateContentOfNextTimeTags } from '../modules/updatePages';
 
 describe("update test", () => {
     const update = async (today) => {
