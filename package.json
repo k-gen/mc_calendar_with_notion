@@ -2,17 +2,22 @@
   "name": "mc_calendar_with_notion",
   "version": "1.0.0",
   "description": "",
-  "type": "module",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
-    "start": "node ./dist/index.js",
-    "build": "tsc -p .",
-    "dev": "tsc -w"
+    "start": "functions-framework --target=update --source=dist/",
+    "debug": "node --inspect node_modules/@google-cloud/functions-framework --target=update",
+    "build": "tsc",
+    "dev": "tsc -w",
+    "factory": "node ./dist/__tests__/mock.js",
+    "test": "jest --verbose",
+    "deploy:dev": "gcloud functions deploy mc_calendar-dev --entry-point update --runtime nodejs14 --trigger-http --allow-unauthenticated --region asia-northeast2 --memory 512MB --timeout 360",
+    "deploy:prod": "gcloud functions deploy mc_calendar --entry-point update --runtime nodejs14 --trigger-http --allow-unauthenticated --region asia-northeast2 --memory 512MB --timeout 360"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/functions-framework": "^1.9.0",
     "@holiday-jp/holiday_jp": "^2.3.0",
     "@notionhq/client": "^0.3.1",
     "@types/": "holiday-jp/holiday_jp",
@@ -20,6 +25,9 @@
     "dotenv": "^10.0.0"
   },
   "devDependencies": {
+    "@types/jest": "^27.0.2",
+    "jest": "^27.2.4",
+    "ts-jest": "^27.0.5",
     "typescript": "^4.4.2"
   }
 }

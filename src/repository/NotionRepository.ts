@@ -1,6 +1,9 @@
 import { Client, UnknownHTTPResponseError } from "@notionhq/client/build/src";
-import { DatabasesQueryResponse } from "@notionhq/client/build/src/api-endpoints";
-import { DatePropertyValue } from "@notionhq/client/build/src/api-types";
+import {
+  DatabasesQueryParameters,
+  DatabasesQueryResponse,
+} from "@notionhq/client/build/src/api-endpoints";
+import { DatePropertyValue, Page } from "@notionhq/client/build/src/api-types";
 import { Config } from "../config";
 import { isDetectiveType } from "../utils";
 
@@ -97,6 +100,35 @@ export class NotionRepository {
       if (error instanceof UnknownHTTPResponseError) {
         console.error({ error });
       }
+    }
+  };
+
+  /**
+   * ページの一覧を取得
+   * @returns Page[]
+   */
+  queryPages = async (input: DatabasesQueryParameters): Promise<Page[]> => {
+    try {
+      const response = await this.#notion.databases.query({
+        ...{ database_id: this.#DATABASE_ID },
+        ...input,
+        // sorts: [
+        //   {
+        //     property: Props.CLONE,
+        //     direction: "ascending",
+        //   },
+        //   {
+        //     property: Props.DATE,
+        //     direction: "ascending",
+        //   },
+        // ],
+      });
+      return response.results;
+    } catch (error) {
+      if (error instanceof UnknownHTTPResponseError) {
+        console.log(error.body);
+      }
+      throw error;
     }
   };
 }

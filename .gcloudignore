@@ -1,0 +1,17 @@
+# Directory
+.git/
+.vscode/
+node_modules/
+src
+**/__tests__/**
+# File
+.env
+.env.example
+.gitignore
+.gcloudignore
+*.md
+*.json
+!package.json
+*.map
+jest.config.js
+*.test.js

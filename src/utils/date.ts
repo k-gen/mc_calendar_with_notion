@@ -1,5 +1,17 @@
 import holiday_jp from "@holiday-jp/holiday_jp";
 import dayjs, { Dayjs } from "dayjs";
+import "dayjs/locale/ja.js";
+
+// import timezone from "dayjs/plugin/timezone.js";
+import timezone from "dayjs/plugin/timezone";
+// import utc from "dayjs/plugin/utc.js";
+import utc from "dayjs/plugin/utc";
+// import weekday from "dayjs/plugin/weekday.js";
+import weekday from "dayjs/plugin/weekday";
+
+dayjs.extend(timezone);
+dayjs.extend(utc);
+dayjs.extend(weekday);
 
 const SATURDAY = 6;
 const SUNDAY = 0;
