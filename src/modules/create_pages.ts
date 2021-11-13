@@ -14,7 +14,7 @@ export const createClone = async (diffContents: string[]): Promise<PagesUpdateRe
         await Promise.all(
             diffContents.map(async (diffContent, index) => {
                 return notion.pages.create({
-                    parent: { database_id: databaseId ? databaseId : ''},
+                    parent: { database_id: databaseId ?? ''},
                     properties: {
                         "Clone": {
                             type: "checkbox",

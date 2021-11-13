@@ -4,6 +4,7 @@ import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import { UnknownHTTPResponseError } from "@notionhq/client"
 import { isToday } from '../utils/index.js'
 import { queryNextMC, queryClonePage } from './query_pages.js'
+import { Dayjs } from 'dayjs';
 
 /**
  * 日直当番の日付を各行のDateプロパティに追加
@@ -45,7 +46,7 @@ export const updateContentOfDate = async (pages: Page[], weekdays: string[]): Pr
  * @param today - YYYY-MM-DD
  * @returns PagesUpdateResponse[]
  */
-export const updateContentOfTodayTags = async (pages: Page[], today: string): Promise<PagesUpdateResponse[]> => {
+export const updateContentOfTodayTags = async (pages: Page[], today: Dayjs): Promise<PagesUpdateResponse[]> => {
     try {
         return await Promise.all(
             pages.map( async page => {
@@ -90,7 +91,7 @@ export const updateContentOfTodayTags = async (pages: Page[], today: string): Pr
  * @param today
  * @returns PagesUpdateResponse
  */
-export const updateContentOfNextTimeTags = async (today: string): Promise<PagesUpdateResponse> => {
+export const updateContentOfNextTimeTags = async (today: Dayjs): Promise<PagesUpdateResponse> => {
     const target = await queryNextMC(today)
     try {
         return await notion.pages.update({

@@ -1,5 +1,5 @@
-import dayjs from 'dayjs'
-import { getWeekdays, getDiffContents } from '../utils/index.js'
+import { Dayjs } from 'dayjs'
+import { getWeekdaysByDate, getDiffContents } from '../utils/index'
 import { queryClonePage, queryPageByfirstWeekdayInThisMonth, queryPages } from './query_pages.js'
 import { deleteClone } from './delete_pages.js'
 import { createClone } from './create_pages.js'
@@ -13,7 +13,7 @@ import { updateContentOfName } from './update_pages.js'
  * @param today
  * @returns Page[]
  */
-const sortPages = async (pages: Page[], today: string): Promise<Page[]> => {
+const sortPages = async (pages: Page[], today: Dayjs): Promise<Page[]> => {
     try {
         let sortPages: Page[] = []
         // 次に先頭になるページのpage_idを取得（今月の第1営業日）
@@ -51,15 +51,21 @@ const sortPages = async (pages: Page[], today: string): Promise<Page[]> => {
  * @returns pages
  * @returns weekdays
  */
-export const init = async (today: string) => {
+export const init = async (today: Dayjs): Promise<{
+    pages: Page[],
+    weekdays: string[]
+}> => {
+    const format = ((dates: Dayjs[]) => dates.map(date => date.format('YYYY-MM-DD')))
+
     // ページオブジェクト一覧を取得
     let pages = await queryPages()
     // 当月の平日一覧を取得
-    let weekdays = getWeekdays(dayjs(today).date(1))
-    // 翌月の平日一覧を取得
-    const weekdaysInNextMonth = getWeekdays(dayjs(today).date(1).add(1, 'month'))
+    let weekdays = format(getWeekdaysByDate(today))
+    // 翌月の平日一覧を取得s
+    const weekdaysInNextMonth = format(getWeekdaysByDate(today.add(1, 'month')))
+
     // カレンダー更新処理
-    if (dayjs(today).date() === 1) {
+    if (today === today.startOf('month')) {
         // ページの並び替え
         pages = await sortPages(pages, today)
         // ページ数が平日数に満たない場合は先頭から順にページを複製

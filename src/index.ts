@@ -1,17 +1,10 @@
-import dayjs from 'dayjs';
-import 'dayjs/locale/ja.js'
-import timezone from 'dayjs/plugin/timezone.js'
-import utc from "dayjs/plugin/utc.js";
-import weekday from 'dayjs/plugin/weekday.js'
-dayjs.extend(timezone)
-dayjs.extend(utc)
-dayjs.extend(weekday)
+import { dayjsJa } from './utils/index.js';
 import { updateContentOfDate, updateContentOfNextTimeTags, updateContentOfTodayTags } from './modules/update_pages.js'
 import { init } from './modules/init_pages.js'
 
-export function update (req, res) {
+export function update (_, res) {
     (async () => {
-        const today = dayjs().tz('Asia/Tokyo').format('YYYY-MM-DD')
+        const today = dayjsJa()
         const {pages, weekdays} = await init(today)
         await updateContentOfDate(pages, weekdays)
         console.log("Success! Updated date.")

@@ -1,1 +1,2 @@
-export * from './utils.js'
+export * from './utils'
+export * from './date'

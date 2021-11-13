@@ -1,8 +1,8 @@
 import { notion, databaseId } from '../config/index.js'
 import { DatePropertyValue, Page } from '@notionhq/client/build/src/api-types'
 import { UnknownHTTPResponseError } from "@notionhq/client"
-import dayjs from 'dayjs'
-import { getWeekdays } from '../utils/utils.js'
+import { Dayjs } from 'dayjs'
+import { getWeekdaysByDate } from '../utils/index.js'
 
 /**
  * ページの一覧を取得
@@ -11,7 +11,7 @@ import { getWeekdays } from '../utils/utils.js'
 export const queryPages = async (): Promise<Page[]> => {
     try {
         const response = await notion.databases.query({
-            database_id: databaseId != null ? databaseId : "",
+            database_id: databaseId ?? "",
             sorts: [
                 {
                     property: "Clone",
@@ -39,7 +39,7 @@ export const queryPages = async (): Promise<Page[]> => {
 export const queryClonePage = async (): Promise<Page[]> => {
     try {
         const response = await notion.databases.query({
-            database_id: databaseId ? databaseId : '',
+            database_id: databaseId ?? '',
             filter: {
                 property: "Clone",
                 checkbox: {
@@ -58,14 +58,12 @@ export const queryClonePage = async (): Promise<Page[]> => {
 
 /**
  * 今月の最初の営業日が割り当てられたページを取得
- * @param today
- * @returns Page[]
  */
-export const queryPageByfirstWeekdayInThisMonth = async (today: string): Promise<Page[]> => {
+export const queryPageByfirstWeekdayInThisMonth = async (today: Dayjs): Promise<Page[]> => {
     try {
-        const firstWeekdayInThisMonth = getWeekdays(dayjs(today).date(1))[0]
+        const firstWeekdayInThisMonth = getWeekdaysByDate(today)[0].format('YYYY-MM-DD')
         const response = await notion.databases.query({
-            database_id: databaseId != null ? databaseId : "",
+            database_id: databaseId ?? "",
             filter: {
                 property: "Date",
                 date: {
@@ -87,10 +85,10 @@ export const queryPageByfirstWeekdayInThisMonth = async (today: string): Promise
  * @param today
  * @returns 次回日直のページオブジェクト
  */
-export const queryNextMC = async (today: string): Promise<Page> => {
+export const queryNextMC = async (today: Dayjs): Promise<Page> => {
     try {
         const response = await notion.databases.query({
-            database_id: databaseId != null ? databaseId : "",
+            database_id: databaseId ?? "",
             sorts: [
                 {
                     property: "Date",
@@ -98,18 +96,11 @@ export const queryNextMC = async (today: string): Promise<Page> => {
                 }
             ]
         });
-        let target = response.results[0] // 初期値
-        response.results.some((result) => {
-            // 今日から直近の平日を日直として変数に代入
-            const targetDate = dayjs((result.properties.Date as DatePropertyValue).date?.start)
-            const duration = dayjs(today).diff(targetDate, 'day')
-            if (duration < 0) {
-                target = result
-                return true
-            }
-            return false
-        })
-        return target
+
+        // 今日から直近の平日を日直として変数に代入
+        return response.results.find((result) => (
+            today.diff((result.properties.Date as DatePropertyValue).date?.start, 'day') < 0
+        )) ?? response.results[0]
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)
