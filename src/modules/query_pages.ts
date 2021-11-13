@@ -61,7 +61,7 @@ export const queryClonePage = async (): Promise<Page[]> => {
  */
 export const queryPageByfirstWeekdayInThisMonth = async (today: Dayjs): Promise<Page[]> => {
     try {
-        const firstWeekdayInThisMonth = getWeekdaysByDate(today)[0].format('YYYY-MM-DD')
+        const firstWeekdayInThisMonth = getWeekdaysByDate(today)[0].formatY4M2D2()
         const response = await notion.databases.query({
             database_id: databaseId ?? "",
             filter: {

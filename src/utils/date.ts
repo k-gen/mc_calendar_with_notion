@@ -9,6 +9,16 @@ dayjs.extend(weekday)
 dayjs.locale('ja')
 import { isHoliday as _isHoliday } from '@holiday-jp/holiday_jp'
 
+declare module 'dayjs' {
+  interface Dayjs {
+    formatY4M2D2 (): string
+  }
+}
+
+dayjs.prototype.formatY4M2D2 = function () {
+  return this.format('YYYY-MM-DD')
+}
+
 export { dayjs as dayjsJa }
 
 const weekdays = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'] as const

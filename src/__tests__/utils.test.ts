@@ -23,14 +23,14 @@ describe("utils.hasWeekday", () => {
         // console.log({todayWeekDay})
         let date = dayjsJa().format('YYYY-MM-DD HH:mm:ss')
         console.log({date})
-        let adate = dayjsJa().add(1, 'month').date(1).format('YYYY-MM-DD')
+        let adate = dayjsJa().add(1, 'month').date(1).formatY4M2D2()
         console.log({adate})
         expect(matchWeekdays(today, '月曜日', '土曜日')).toBe(true)
 
-        console.log({ today: today.format('YYYY-MM-DD') })
+        console.log({ today: today.formatY4M2D2() })
 
         const start = today.startOf('month')
-        console.log({ start: start.format('YYYY-MM-DD') })
+        console.log({ start: start.formatY4M2D2() })
         console.log('today === start', today === start)
 
         const date2021_11_01 = dayjsJa('2021-11-01')

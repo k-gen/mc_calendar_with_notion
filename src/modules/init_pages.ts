@@ -55,14 +55,12 @@ export const init = async (today: Dayjs): Promise<{
     pages: Page[],
     weekdays: string[]
 }> => {
-    const format = ((dates: Dayjs[]) => dates.map(date => date.format('YYYY-MM-DD')))
-
     // ページオブジェクト一覧を取得
     let pages = await queryPages()
     // 当月の平日一覧を取得
-    let weekdays = format(getWeekdaysByDate(today))
+    let weekdays = getWeekdaysByDate(today).map(date => date.formatY4M2D2())
     // 翌月の平日一覧を取得s
-    const weekdaysInNextMonth = format(getWeekdaysByDate(today.add(1, 'month')))
+    const weekdaysInNextMonth = getWeekdaysByDate(today.add(1, 'month')).map(date => date.formatY4M2D2())
 
     // カレンダー更新処理
     if (today.isSame(today.startOf('month'), 'day')) {
