@@ -1,6 +1,6 @@
 import { makeConsoleLogger } from '@notionhq/client/build/src/logging';
 import { notion } from '../config'
-import { isToday } from '../utils/utils';
+import { isTodayPage } from '../utils/page';
 import * as mock from "./mock"
 import { dayjsJa, matchWeekdays } from '../utils/index';
 
@@ -11,7 +11,7 @@ describe("utils.isToday", () => {
         httpRequestGetMock.mockResolvedValue(mock.today)
     })
     test("0", async () => {
-        const result = await isToday("b0b1467f-b5c1-40f2-8d9c-3576e8c28be5", dayjsJa("2021-09-30"))
+        const result = await isTodayPage("b0b1467f-b5c1-40f2-8d9c-3576e8c28be5", dayjsJa("2021-09-30"))
         expect(result).toBe(true)
     })
 })

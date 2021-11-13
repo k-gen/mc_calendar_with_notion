@@ -9,7 +9,7 @@ import { Dayjs } from 'dayjs'
  * @param today - YYYY-MM-DD
  * @returns Dateプロパティとtodayの値が一致していればtrue
  */
-export const isToday = async (pageId: string, today: Dayjs): Promise<boolean> => {
+export const isTodayPage = async (pageId: string, today: Dayjs): Promise<boolean> => {
     try {
         const response = await notion.pages.retrieve({
             page_id: pageId,

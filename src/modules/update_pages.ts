@@ -2,7 +2,7 @@ import { notion } from '../config/index.js'
 import { Page, TitlePropertyValue } from '@notionhq/client/build/src/api-types'
 import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import { UnknownHTTPResponseError } from "@notionhq/client"
-import { isToday } from '../utils/index.js'
+import { isTodayPage } from '../utils/index.js'
 import { queryNextMC, queryClonePage } from './query_pages.js'
 import { Dayjs } from 'dayjs';
 
@@ -50,7 +50,7 @@ export const updateContentOfTodayTags = async (pages: Page[], today: Dayjs): Pro
     try {
         return await Promise.all(
             pages.map( async page => {
-                if (await isToday(page.id, today)) {
+                if (await isTodayPage(page.id, today)) {
                     return await notion.pages.update({
                         page_id: page.id,
                         archived: false,
