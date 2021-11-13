@@ -58,7 +58,7 @@ export const queryClonePage = async (): Promise<Page[]> => {
 
 /**
  * 今月の最初の営業日が割り当てられたページを取得
- * @param today 
+ * @param today
  * @returns Page[]
  */
 export const queryPageByfirstWeekdayInThisMonth = async (today: string): Promise<Page[]> => {

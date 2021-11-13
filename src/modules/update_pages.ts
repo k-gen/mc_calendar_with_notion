@@ -11,7 +11,7 @@ import { queryNextMC, queryClonePage } from './query_pages.js'
  * @param weekdays
  * @returns PagesUpdateResponse[]
  */
-export const updateContentOfDate = async (pages: Page[], weekdays: string[]): Promise<PagesUpdateResponse[]> => {    
+export const updateContentOfDate = async (pages: Page[], weekdays: string[]): Promise<PagesUpdateResponse[]> => {
     try {
         // 各行に日付を追加
         return await Promise.all(
@@ -116,8 +116,8 @@ export const updateContentOfNextTimeTags = async (today: string): Promise<PagesU
 
 /**
  * ソート結果に合わせて名前を更新
- * @param pages 
- * @param sortPages 
+ * @param pages
+ * @param sortPages
  * @returns PagesUpdateResponse[]
  */
 export const updateContentOfName = async (pages: Page[], sortPages: Page[]): Promise<PagesUpdateResponse[]> => {
@@ -151,7 +151,7 @@ export const updateContentOfName = async (pages: Page[], sortPages: Page[]): Pro
 
 /**
  * 複製されたページに名前を設定
- * @param diffContents 
+ * @param diffContents
  * @returns PagesUpdateResponse[]
  */
 export const updateNameOfClonePage = async (diffContents: string[]): Promise<PagesUpdateResponse[]> => {

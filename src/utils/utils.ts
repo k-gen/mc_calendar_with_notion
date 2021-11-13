@@ -9,7 +9,7 @@ import holiday_jp from '@holiday-jp/holiday_jp'
  * @param date - date
  * @returns 引数の日付が休日ならtrue
  */
- const isHoliday = (date: string): boolean => {
+const isHoliday = (date: string): boolean => {
     const isSaturday = dayjs(date).day() === 6
     const isSunday = dayjs(date).day() === 0
     return holiday_jp.isHoliday(new Date(date)) || isSaturday || isSunday
@@ -21,7 +21,7 @@ import holiday_jp from '@holiday-jp/holiday_jp'
  * @param today - YYYY-MM-DD
  * @returns Dateプロパティとtodayの値が一致していればtrue
  */
- export const isToday = async (pageId: string, today: string): Promise<boolean> => {
+export const isToday = async (pageId: string, today: string): Promise<boolean> => {
     try {
         const response = await notion.pages.retrieve({
             page_id: pageId,
@@ -40,7 +40,7 @@ import holiday_jp from '@holiday-jp/holiday_jp'
  * @param dayjs
  * @returns 平日のリスト
  */
- export const getWeekdays = (dayjs: Dayjs): string[] => {
+export const getWeekdays = (dayjs: Dayjs): string[] => {
     let weekdays:string[] = []
     for (let i = 0; i < dayjs.daysInMonth(); i++) {
         let date = dayjs.add(i, 'day')
@@ -58,7 +58,7 @@ import holiday_jp from '@holiday-jp/holiday_jp'
  * @param diff - 当月の平日数と行数(人数)の差
  * @returns 差分コンテンツのタイトルのリスト
  */
- export const getDiffContents = (pages: Page[], diff: number): string[] => {
+export const getDiffContents = (pages: Page[], diff: number): string[] => {
     return pages.slice(0, diff).map(page => {
         return (page.properties.Name as TitlePropertyValue).title[0].plain_text
     })

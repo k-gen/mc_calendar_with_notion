@@ -29,7 +29,7 @@ describe("query_pages.queryDiffContents", () => {
 //     beforeEach(() => {
 //         httpRequestGetMock = jest.spyOn(notion.databases, "query")
 //         httpRequestGetMock.mockResolvedValue(mock.pages)
-//     })        
+//     })
 //     test("0", async () => {
 //         await query_pages.queryDeletePages([])
 //     })

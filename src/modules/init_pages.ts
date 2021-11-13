@@ -9,13 +9,13 @@ import { updateContentOfName } from './update_pages.js'
 
 /**
  * ページの並び替え
- * @param pages 
- * @param today 
+ * @param pages
+ * @param today
  * @returns Page[]
  */
- const sortPages = async (pages: Page[], today: string): Promise<Page[]> => {
+const sortPages = async (pages: Page[], today: string): Promise<Page[]> => {
     try {
-        let sortPages: Page[] = []        
+        let sortPages: Page[] = []
         // 次に先頭になるページのpage_idを取得（今月の第1営業日）
         const startPageId = (await queryPageByfirstWeekdayInThisMonth(today))[0]?.id
         // 次に先頭になるページの直前までを配列に追加
@@ -47,7 +47,7 @@ import { updateContentOfName } from './update_pages.js'
 
 /**
  * 初期化処理
- * @param today 
+ * @param today
  * @returns pages
  * @returns weekdays
  */
