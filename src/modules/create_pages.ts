@@ -12,7 +12,7 @@ import { queryPages } from './query_pages.js';
 export const createClone = async (diffContents: string[]): Promise<PagesUpdateResponse[]> => {
     try {
         await Promise.all(
-            diffContents.map(async (diffContent, index) => {
+            diffContents.map(async () => {
                 return notion.pages.create({
                     parent: { database_id: databaseId ?? ''},
                     properties: {

@@ -20,8 +20,8 @@ const sortPages = async (pages: Page[], today: Dayjs): Promise<Page[]> => {
         const startPageId = (await queryPageByfirstWeekdayInThisMonth(today))[0]?.id
         // 次に先頭になるページの直前までを配列に追加
         if (startPageId) {
-            pages.some( page => {
-                if (page.id === startPageId) return true
+            pages.forEach( page => {
+                if (page.id === startPageId) return
                 sortPages.push(page)
             })
         }
@@ -36,7 +36,7 @@ const sortPages = async (pages: Page[], today: Dayjs): Promise<Page[]> => {
             sortPages = [...startPages, ...sortPages]
         }
         await updateContentOfName(pages, sortPages)
-        return await queryPages()
+        return queryPages()
     } catch (error) {
         if (error instanceof UnknownHTTPResponseError) {
             console.log(error.body)

@@ -12,7 +12,7 @@ export const deleteCloneCheckbox = async (): Promise<PagesUpdateResponse[]> => {
     try {
         const clonePages = await queryClonePage()
         return Promise.all(clonePages.map(async clonePage => {
-            return await notion.pages.update({
+            return notion.pages.update({
                 page_id: clonePage.id,
                 archived: false,
                 properties: {
