@@ -65,7 +65,7 @@ export const init = async (today: Dayjs): Promise<{
     const weekdaysInNextMonth = format(getWeekdaysByDate(today.add(1, 'month')))
 
     // カレンダー更新処理
-    if (today === today.startOf('month')) {
+    if (today.isSame(today.startOf('month'), 'day')) {
         // ページの並び替え
         pages = await sortPages(pages, today)
         // ページ数が平日数に満たない場合は先頭から順にページを複製

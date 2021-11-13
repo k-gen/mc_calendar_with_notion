@@ -26,5 +26,16 @@ describe("utils.hasWeekday", () => {
         let adate = dayjsJa().add(1, 'month').date(1).format('YYYY-MM-DD')
         console.log({adate})
         expect(matchWeekdays(today, '月曜日', '土曜日')).toBe(true)
+
+        console.log({ today: today.format('YYYY-MM-DD') })
+
+        const start = today.startOf('month')
+        console.log({ start: start.format('YYYY-MM-DD') })
+        console.log('today === start', today === start)
+
+        const date2021_11_01 = dayjsJa('2021-11-01')
+
+        console.log(`date2021_11_01.isSame(date2021_11_01.startOf('month'), 'day')`, date2021_11_01.isSame(date2021_11_01.startOf('month'), 'day'))
+        console.log(`date2021_11_01 === date2021_11_01.startOf('month')`, date2021_11_01 === date2021_11_01.startOf('month'))
     })
 })
