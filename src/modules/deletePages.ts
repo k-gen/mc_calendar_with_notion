@@ -2,7 +2,7 @@ import { UnknownHTTPResponseError } from "@notionhq/client"
 import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints"
 import { Page } from "@notionhq/client/build/src/api-types"
 import { notion } from "../config/index.js"
-import { queryClonePage } from "./query_pages.js"
+import { queryClonePage } from "./queryPages.js"
 
 /**
  * 複製のチェックを解除
