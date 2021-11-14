@@ -2,6 +2,7 @@ import { Client, UnknownHTTPResponseError } from "@notionhq/client/build/src";
 import {
   DatabasesQueryParameters,
   DatabasesQueryResponse,
+  PagesUpdateResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import { DatePropertyValue, Page } from "@notionhq/client/build/src/api-types";
 import { Dayjs } from "dayjs";
@@ -79,6 +80,7 @@ export class NotionRepository {
       if (error instanceof UnknownHTTPResponseError) {
         console.error({ error });
       }
+      return Promise.reject(error)
     }
   };
   updatePageTag = async (pageId: string, isSelectValue: boolean) => {
@@ -103,6 +105,32 @@ export class NotionRepository {
       }
     }
   };
+  updatePageContent = async (pageId: string, content: string) => {
+    try {
+      return await this.#notion.pages.update({
+        page_id: pageId,
+        archived: false,
+        properties: {
+          title: {
+            type: "title",
+            title: [
+              {
+                type: "text",
+                text: {
+                  content: content,
+                },
+              },
+            ],
+          },
+        }
+      });
+    } catch (error) {
+      if (error instanceof UnknownHTTPResponseError) {
+        console.error({ error });
+      }
+      return Promise.reject(error);
+    }
+  }
 
   /**
    * ページの一覧を取得

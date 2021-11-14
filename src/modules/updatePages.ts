@@ -16,23 +16,13 @@ export const updateContentOfDate = async (
   pages: Page[],
   weekdays: string[]
 ): Promise<PagesUpdateResponse[]> => {
+  const notionRepository = new NotionRepository();
+
   try {
     // 各行に日付を追加
     return await Promise.all(
       pages.map(async (page, index) => {
-        return await notion.pages.update({
-          page_id: page.id,
-          archived: false,
-          properties: {
-            Date: {
-              type: "date",
-              date: {
-                start: weekdays[index],
-                end: undefined,
-              },
-            },
-          },
-        });
+        return notionRepository.updatePageDate(page.id, weekdays[index])
       })
     );
   } catch (error) {
@@ -59,7 +49,7 @@ export const updateContentOfTodayTags = async (
     return await Promise.all(
       pages.map(async page => {
         if (await notionRepository.isToday(page.id, today)) {
-          return await notion.pages.update({
+          return await notion.pages.update({  // FIXME
             page_id: page.id,
             archived: false,
             properties: {
@@ -135,28 +125,12 @@ export const updateContentOfName = async (
   pages: Page[],
   sortPages: Page[]
 ): Promise<PagesUpdateResponse[]> => {
+  const notionRepository = new NotionRepository()
+
   try {
     return await Promise.all(
       pages.map(async (page, index) => {
-        return await notion.pages.update({
-          page_id: page.id,
-          archived: false,
-          properties: {
-            title: {
-              type: "title",
-              title: [
-                {
-                  type: "text",
-                  text: {
-                    content: (
-                      sortPages[index].properties.Name as TitlePropertyValue
-                    ).title[0].plain_text,
-                  },
-                },
-              ],
-            },
-          },
-        });
+        return notionRepository.updatePageContent(page.id, (sortPages[index].properties.Name as TitlePropertyValue).title[0].plain_text)
       })
     );
   } catch (error) {
@@ -175,27 +149,13 @@ export const updateContentOfName = async (
 export const updateNameOfClonePage = async (
   diffContents: string[]
 ): Promise<PagesUpdateResponse[]> => {
+  const notionRepository = new NotionRepository()
+
   try {
     const clonePages = await queryClonePage();
     return await Promise.all(
       diffContents.map(async (diffContent, index) => {
-        return await notion.pages.update({
-          page_id: clonePages[index].id,
-          archived: false,
-          properties: {
-            title: {
-              type: "title",
-              title: [
-                {
-                  type: "text",
-                  text: {
-                    content: diffContent,
-                  },
-                },
-              ],
-            },
-          },
-        });
+        return notionRepository.updatePageContent(clonePages[index].id, diffContent)
       })
     );
   } catch (error) {
