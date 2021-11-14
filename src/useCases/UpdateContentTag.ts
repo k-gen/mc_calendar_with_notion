@@ -1,3 +1,4 @@
+import { Dayjs } from "dayjs";
 import { NotionRepository } from "../repository/NotionRepository";
 
 export default class UpdateContentTag {
@@ -7,7 +8,7 @@ export default class UpdateContentTag {
    * @param today
    * @returns {void}
    */
-  invoke = async (today: string) => {
+  invoke = async (today: Dayjs) => {
     const pageIds = await this.notionRepo.getPageIds();
     if (pageIds == null || pageIds.length === 0) return;
     const allResult = await Promise.all(

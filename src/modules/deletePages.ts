@@ -8,11 +8,11 @@ import { queryClonePage } from "./queryPages.js"
  * 複製のチェックを解除
  * @returns PagesUpdateResponse[]
  */
- export const deleteCloneCheckbox = async (): Promise<PagesUpdateResponse[]> => {
+export const deleteCloneCheckbox = async (): Promise<PagesUpdateResponse[]> => {
     try {
         const clonePages = await queryClonePage()
         return Promise.all(clonePages.map(async clonePage => {
-            return await notion.pages.update({
+            return notion.pages.update({
                 page_id: clonePage.id,
                 archived: false,
                 properties: {
@@ -33,7 +33,7 @@ import { queryClonePage } from "./queryPages.js"
 
 /**
  * 複製ページを削除
- * @param clonePages 
+ * @param clonePages
  * @returns PagesUpdateResponse[]
  */
 export const deleteClone = async (clonePages: Page[]): Promise<PagesUpdateResponse[]> => {

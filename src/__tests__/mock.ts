@@ -1308,7 +1308,7 @@ const factoryMockData = async (): Promise<PagesCreateResponse[]> => {
     return await Promise.all(
         memberList.map(async member => {
             const response = notion.pages.create({
-                parent: { database_id: databaseId ? databaseId : ''},
+                parent: { database_id: databaseId ?? ''},
                 properties: {
                   title: {
                       type: "title",

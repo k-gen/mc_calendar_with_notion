@@ -1,45 +1,59 @@
-import holiday_jp from "@holiday-jp/holiday_jp";
-import dayjs, { Dayjs } from "dayjs";
-import "dayjs/locale/ja.js";
+import dayjs, { Dayjs } from 'dayjs'
+import timezone from 'dayjs/plugin/timezone.js'
+import utc from "dayjs/plugin/utc.js";
+import weekday from 'dayjs/plugin/weekday.js'
+import 'dayjs/locale/ja'
+dayjs.extend(timezone)
+dayjs.extend(utc)
+dayjs.extend(weekday)
+dayjs.locale('ja')
+import { isHoliday as _isHoliday } from '@holiday-jp/holiday_jp'
 
-// import timezone from "dayjs/plugin/timezone.js";
-import timezone from "dayjs/plugin/timezone";
-// import utc from "dayjs/plugin/utc.js";
-import utc from "dayjs/plugin/utc";
-// import weekday from "dayjs/plugin/weekday.js";
-import weekday from "dayjs/plugin/weekday";
+declare module 'dayjs' {
+  interface Dayjs {
+    formatY4M2D2 (): string
+  }
+}
 
-dayjs.extend(timezone);
-dayjs.extend(utc);
-dayjs.extend(weekday);
+dayjs.prototype.formatY4M2D2 = function () {
+  return this.format('YYYY-MM-DD')
+}
 
-const SATURDAY = 6;
-const SUNDAY = 0;
+export { dayjs as dayjsJa }
+
+const weekdays = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'] as const
+type WeekDay = typeof weekdays[number]
 
 /**
  * 引数の日付が休日であるか判定
- * @param {string} dateChar - date
- * @returns {boolean} 休日ならtrue
+ * @param date - date
+ * @returns 引数の日付が休日ならtrue
  */
-export const isHoliday = (dateChar: string): boolean => {
-  const isSaturday = dayjs(dateChar).day() === SATURDAY;
-  const isSunday = dayjs(dateChar).day() === SUNDAY;
-  return holiday_jp.isHoliday(new Date(dateChar)) || isSaturday || isSunday;
-};
+const isHoliday = (date: Dayjs): boolean => {
+  return _isHoliday(date.toDate()) || matchWeekdays(date, '土曜日', '日曜日')
+}
+
+// FIXME rewireを入れて非公開関数にしたい
+export const matchWeekdays = (date: Dayjs, ...inputWeekdays: WeekDay[]): boolean => (
+  inputWeekdays.some(weekday => weekday === weekdays[date.day()])
+)
 
 /**
- * 平日のリストを取得
+ * 指定日の月の全ての平日を取得
  * @param dayjs
- * @returns {Array<string>} weekdays
+ * @returns 平日のリスト
  */
-export const getWeekdays = (dayjs: Dayjs): Array<string> => {
-  const weekdays: string[] = [];
-  for (let i = 0; i < dayjs.daysInMonth(); i++) {
-    const date = dayjs.add(i, "day");
-    const formattedDate = date.locale("ja").format("YYYY-MM-DD");
-    if (!isHoliday(formattedDate) && dayjs.month() === date.month()) {
-      weekdays.push(formattedDate);
-    }
+export const getWeekdaysByDate = (setDate: Dayjs): Dayjs[] => {
+  let weekdays: Dayjs[] = []
+  const firstDay = setDate.date(1)
+
+  for (let i = 0; i < setDate.daysInMonth(); i++) {
+      let increasedDate = firstDay.add(i, 'day')
+
+      if (setDate.month() !== increasedDate.month()) break
+      if (isHoliday(increasedDate)) continue
+
+      weekdays.push(increasedDate)
   }
-  return weekdays;
-};
+  return weekdays
+}

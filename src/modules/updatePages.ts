@@ -3,6 +3,8 @@ import { Page, TitlePropertyValue } from "@notionhq/client/build/src/api-types";
 import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import { UnknownHTTPResponseError } from "@notionhq/client";
 import { queryNextMC, queryClonePage } from "./queryPages.js";
+import { Dayjs } from "dayjs";
+import { NotionRepository } from "../repository/NotionRepository.js";
 
 /**
  * 日直当番の日付を各行のDateプロパティに追加
@@ -14,23 +16,13 @@ export const updateContentOfDate = async (
   pages: Page[],
   weekdays: string[]
 ): Promise<PagesUpdateResponse[]> => {
+  const notionRepository = new NotionRepository();
+
   try {
     // 各行に日付を追加
     return await Promise.all(
       pages.map(async (page, index) => {
-        return await notion.pages.update({
-          page_id: page.id,
-          archived: false,
-          properties: {
-            Date: {
-              type: "date",
-              date: {
-                start: weekdays[index],
-                end: undefined,
-              },
-            },
-          },
-        });
+        return notionRepository.updatePageDate(page.id, weekdays[index])
       })
     );
   } catch (error) {
@@ -49,13 +41,15 @@ export const updateContentOfDate = async (
  */
 export const updateContentOfTodayTags = async (
   pages: Page[],
-  today: string
+  today: Dayjs
 ): Promise<PagesUpdateResponse[]> => {
+  const notionRepository = new NotionRepository()
+
   try {
     return await Promise.all(
       pages.map(async page => {
-        if (await isToday(page.id, today)) {
-          return await notion.pages.update({
+        if (await notionRepository.isToday(page.id, today)) {
+          return await notion.pages.update({  // FIXME
             page_id: page.id,
             archived: false,
             properties: {
@@ -68,18 +62,18 @@ export const updateContentOfTodayTags = async (
               },
             },
           });
-        } else {
-          return await notion.pages.update({
-            page_id: page.id,
-            archived: false,
-            properties: {
-              Tags: {
-                type: "select",
-                select: null,
-              },
-            },
-          });
         }
+
+        return await notion.pages.update({
+          page_id: page.id,
+          archived: false,
+          properties: {
+            Tags: {
+              type: "select",
+              select: null,
+            },
+          },
+        });
       })
     );
   } catch (error) {
@@ -96,7 +90,7 @@ export const updateContentOfTodayTags = async (
  * @returns PagesUpdateResponse
  */
 export const updateContentOfNextTimeTags = async (
-  today: string
+  today: Dayjs
 ): Promise<PagesUpdateResponse> => {
   const target = await queryNextMC(today);
   try {
@@ -131,28 +125,12 @@ export const updateContentOfName = async (
   pages: Page[],
   sortPages: Page[]
 ): Promise<PagesUpdateResponse[]> => {
+  const notionRepository = new NotionRepository()
+
   try {
     return await Promise.all(
       pages.map(async (page, index) => {
-        return await notion.pages.update({
-          page_id: page.id,
-          archived: false,
-          properties: {
-            title: {
-              type: "title",
-              title: [
-                {
-                  type: "text",
-                  text: {
-                    content: (
-                      sortPages[index].properties.Name as TitlePropertyValue
-                    ).title[0].plain_text,
-                  },
-                },
-              ],
-            },
-          },
-        });
+        return notionRepository.updatePageContent(page.id, (sortPages[index].properties.Name as TitlePropertyValue).title[0].plain_text)
       })
     );
   } catch (error) {
@@ -171,27 +149,13 @@ export const updateContentOfName = async (
 export const updateNameOfClonePage = async (
   diffContents: string[]
 ): Promise<PagesUpdateResponse[]> => {
+  const notionRepository = new NotionRepository()
+
   try {
     const clonePages = await queryClonePage();
     return await Promise.all(
       diffContents.map(async (diffContent, index) => {
-        return await notion.pages.update({
-          page_id: clonePages[index].id,
-          archived: false,
-          properties: {
-            title: {
-              type: "title",
-              title: [
-                {
-                  type: "text",
-                  text: {
-                    content: diffContent,
-                  },
-                },
-              ],
-            },
-          },
-        });
+        return notionRepository.updatePageContent(clonePages[index].id, diffContent)
       })
     );
   } catch (error) {

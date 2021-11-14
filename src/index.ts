@@ -1,16 +1,16 @@
+import { dayjsJa } from './utils';
 import UpdateContent from "./controller/UpdateContent";
 import { NotionRepository } from "./repository/NotionRepository";
-
 import {
-  updateContentOfDate,
-  updateContentOfNextTimeTags,
-  updateContentOfTodayTags,
+    updateContentOfDate,
+    updateContentOfNextTimeTags,
+    updateContentOfTodayTags,
 } from "./modules/updatePages";
 import { init } from "./modules/initPages";
 
-export function update(req, res) {
+export function update(_, res) {
   (async () => {
-    const today = dayjs().tz("Asia/Tokyo").format("YYYY-MM-DD");
+    const today = dayjsJa()
     const { pages, weekdays } = await init(today);
     await updateContentOfDate(pages, weekdays);
     console.log("Success! Updated date.");

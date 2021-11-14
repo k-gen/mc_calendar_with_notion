@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "./dist/index.js",
+  "engines": {
+    "node": "16.x"
+  },
   "scripts": {
     "start": "functions-framework --target=update --source=dist/",
     "debug": "node --inspect node_modules/@google-cloud/functions-framework --target=update",
@@ -20,7 +23,6 @@
     "@google-cloud/functions-framework": "^1.9.0",
     "@holiday-jp/holiday_jp": "^2.3.0",
     "@notionhq/client": "^0.3.1",
-    "@types/": "holiday-jp/holiday_jp",
     "dayjs": "^1.10.6",
     "dotenv": "^10.0.0"
   },

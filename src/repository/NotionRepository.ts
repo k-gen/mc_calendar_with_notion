@@ -2,8 +2,10 @@ import { Client, UnknownHTTPResponseError } from "@notionhq/client/build/src";
 import {
   DatabasesQueryParameters,
   DatabasesQueryResponse,
+  PagesUpdateResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import { DatePropertyValue, Page } from "@notionhq/client/build/src/api-types";
+import { Dayjs } from "dayjs";
 import { Config } from "../config";
 import { isDetectiveType } from "../utils";
 
@@ -35,12 +37,12 @@ export class NotionRepository {
   /**
    * 対象レコードのDateカラムの値が今日の日付と一致しているか判定
    * @param {string} pageId - page_id
-   * @param {string} today - YYYY-MM-DD
+   * @param today
    * @returns {Promise<boolean| undefined>} レコードとtodayが一致しているか
    */
   isToday = async (
     pageId: string,
-    todayChar: string
+    today: Dayjs
   ): Promise<boolean | undefined> => {
     try {
       const response = await this.#notion.pages.retrieve({
@@ -52,7 +54,7 @@ export class NotionRepository {
       if (!isDetectiveType<DatePropertyValue>(datePropName))
         throw new Error("Date Prop Name is not a Date.");
       if (datePropName.date !== null)
-        return datePropName.date.start === todayChar;
+        return today.isSame(datePropName.date.start, 'day')
     } catch (error) {
       if (error instanceof UnknownHTTPResponseError) {
         console.error({ error });
@@ -78,6 +80,7 @@ export class NotionRepository {
       if (error instanceof UnknownHTTPResponseError) {
         console.error({ error });
       }
+      return Promise.reject(error)
     }
   };
   updatePageTag = async (pageId: string, isSelectValue: boolean) => {
@@ -102,6 +105,32 @@ export class NotionRepository {
       }
     }
   };
+  updatePageContent = async (pageId: string, content: string) => {
+    try {
+      return await this.#notion.pages.update({
+        page_id: pageId,
+        archived: false,
+        properties: {
+          title: {
+            type: "title",
+            title: [
+              {
+                type: "text",
+                text: {
+                  content: content,
+                },
+              },
+            ],
+          },
+        }
+      });
+    } catch (error) {
+      if (error instanceof UnknownHTTPResponseError) {
+        console.error({ error });
+      }
+      return Promise.reject(error);
+    }
+  }
 
   /**
    * ページの一覧を取得
