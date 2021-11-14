@@ -1,5 +1,5 @@
 /** @type {import('ts-jest/dist/types').InitialOptionsTsJest} */
-export default {
+module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: [
@@ -20,5 +20,8 @@ export default {
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  testTimeout: 360000
+  testTimeout: 360000,
+  setupFiles: [
+    'dotenv/config'
+  ]
 };

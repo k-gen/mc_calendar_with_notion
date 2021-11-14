@@ -4,27 +4,44 @@ import {
   DatabasesQueryResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import { DatePropertyValue, Page } from "@notionhq/client/build/src/api-types";
+import { RequestParameters } from "@notionhq/client/build/src/Client";
 import { Dayjs } from "dayjs";
 import { Config } from "../config";
 import { isDetectiveType } from "../utils";
 
 const { KEY, DATABASE_ID, Props } = Config.Notion;
 
+export interface NotionRepositoryInterface {
+  request?: unknown,
+  databases: {
+    query: (args: DatabasesQueryParameters) => Promise<DatabasesQueryResponse>
+  }
+}
+
 export class NotionRepository {
   #notion: Client;
   #DATABASE_ID: string;
 
-  constructor() {
-    if (!KEY || !DATABASE_ID) throw new Error("Notion config is not set");
-    this.#notion = new Client({ auth: KEY });
-    this.#DATABASE_ID = DATABASE_ID;
+  // FIXME process.envをmock化しても反映されなかった為引数でDIしてる
+  constructor(
+    { _KEY, _DATABASE_ID }: { _KEY?: string, _DATABASE_ID?: string}
+    = { _KEY: KEY, _DATABASE_ID: DATABASE_ID }
+  ) {
+    if (!_KEY || !_DATABASE_ID) throw new Error("Notion config is not set");
+    this.#notion = new Client({ auth: _KEY });
+    this.#DATABASE_ID = _DATABASE_ID;
   }
+
+  // TODO rewire使ってprivateにしたい
+  query = () =>　(
+    this.#notion.databases.query({
+      database_id: this.#DATABASE_ID,
+    })
+  )
 
   getPageIds = async () => {
     try {
-      const response = (await this.#notion.databases.query({
-        database_id: this.#DATABASE_ID,
-      })) as DatabasesQueryResponse;
+      const response = await this.query()
       return response.results.map(result => result.id);
     } catch (error) {
       if (error instanceof UnknownHTTPResponseError) {
@@ -47,13 +64,16 @@ export class NotionRepository {
       const response = await this.#notion.pages.retrieve({
         page_id: pageId,
       });
+
       if (!(Props.DATE in response.properties))
         throw new Error("Date Prop Name is not found.");
+
       const datePropName = response.properties[Props.DATE];
+
       if (!isDetectiveType<DatePropertyValue>(datePropName))
         throw new Error("Date Prop Name is not a Date.");
-      if (datePropName.date !== null)
-        return today.isSame(datePropName.date.start, 'day')
+
+      if (datePropName.date !== null) return today.isSame(datePropName.date.start, 'day')
     } catch (error) {
       if (error instanceof UnknownHTTPResponseError) {
         console.error({ error });
