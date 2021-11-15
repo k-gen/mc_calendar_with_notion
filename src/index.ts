@@ -1,4 +1,4 @@
-import { dayjsJa } from './utils';
+import { dayjsJa } from "./utils";
 import UpdateContent from "./controller/UpdateContent";
 import { NotionRepository } from "./repository/NotionRepository";
 import {

@@ -1,25 +1,5 @@
-import dayjs, { Dayjs } from 'dayjs'
-import timezone from 'dayjs/plugin/timezone.js'
-import utc from "dayjs/plugin/utc.js";
-import weekday from 'dayjs/plugin/weekday.js'
-import 'dayjs/locale/ja'
-dayjs.extend(timezone)
-dayjs.extend(utc)
-dayjs.extend(weekday)
-dayjs.locale('ja')
+import { Dayjs } from "dayjs"
 import { isHoliday as _isHoliday } from '@holiday-jp/holiday_jp'
-
-declare module 'dayjs' {
-  interface Dayjs {
-    formatY4M2D2 (): string
-  }
-}
-
-dayjs.prototype.formatY4M2D2 = function () {
-  return this.format('YYYY-MM-DD')
-}
-
-export { dayjs as dayjsJa }
 
 const weekdays = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'] as const
 type WeekDay = typeof weekdays[number]

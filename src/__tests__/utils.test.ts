@@ -2,7 +2,7 @@ import { makeConsoleLogger } from '@notionhq/client/build/src/logging';
 import { notion } from '../config'
 import { isTodayPage } from '../utils/page';
 import * as mock from "./mock"
-import { dayjsJa, matchWeekdays } from '../utils/index';
+import { dayjsJa, matchWeekdays } from '../utils';
 
 describe("utils.isToday", () => {
     let httpRequestGetMock: jest.SpyInstance;
