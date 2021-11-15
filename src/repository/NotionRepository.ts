@@ -53,7 +53,7 @@ export class NotionRepository {
       if (!isDetectiveType<DatePropertyValue>(datePropName))
         throw new Error("Date Prop Name is not a Date.");
       if (datePropName.date !== null)
-        return today.isSame(datePropName.date.start, 'day')
+        return today.isSameAtDay(datePropName.date.start)
     } catch (error) {
       if (error instanceof UnknownHTTPResponseError) {
         console.error({ error });

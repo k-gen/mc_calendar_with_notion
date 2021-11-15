@@ -1,4 +1,4 @@
-import dayjs from 'dayjs'
+import dayjs, { ConfigType } from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from "dayjs/plugin/utc"
 import weekday from 'dayjs/plugin/weekday'
@@ -12,11 +12,18 @@ dayjs.locale('ja')
 declare module 'dayjs' {
   interface Dayjs {
     formatY4M2D2 (): string
+    isSameAtDay (date: ConfigType): boolean
   }
 }
 
-dayjs.prototype.formatY4M2D2 = function () {
-  return this.format('YYYY-MM-DD')
+dayjs.prototype = {
+  ...dayjs.prototype,
+  formatY4M2D2: function () {
+    return this.format('YYYY-MM-DD')
+  },
+  isSameAtDay: function (date: ConfigType) {
+    return this.isSame(date, 'day')
+  },
 }
 
 export { dayjs as dayjsJa }
