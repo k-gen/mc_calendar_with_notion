@@ -24,7 +24,7 @@ export class NotionRepository {
     try {
       const response = (await this.#notion.databases.query({
         database_id: this.#DATABASE_ID,
-      })) as DatabasesQueryResponse;
+      }))
       return response.results.map(result => result.id);
     } catch (error) {
       if (error instanceof UnknownHTTPResponseError) {
