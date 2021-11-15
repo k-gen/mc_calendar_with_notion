@@ -1,6 +1,5 @@
-import dayjs from "dayjs";
 import { NotionRepository } from "../repository/NotionRepository";
-import { getWeekdays } from "../utils";
+import { dayjsJa, getWeekdaysByDate } from "../utils";
 
 export default class UpdateContentDate {
   constructor(private notionRepo: NotionRepository) {}
@@ -13,13 +12,18 @@ export default class UpdateContentDate {
     // 各レコード行の id を取得
     const pageIds = await this.notionRepo.getPageIds();
     if (!pageIds || !pageIds.length) return;
+
+    const today = dayjsJa();
+
     // 当月の平日のみのリストを取得
-    let weekdays = getWeekdays(dayjs());
+    let weekdays = getWeekdaysByDate(today).map(day => day.formatY4M2D2());
+
     // 当月の平日の数がレコード行数に満たない場合は来月分も取得
     if (pageIds.length > weekdays.length) {
-      const weekdaysInNextMonth = getWeekdays(dayjs().date(1).add(1, "month"));
+      const weekdaysInNextMonth = getWeekdaysByDate(today.add(1, "month")).map(day => day.formatY4M2D2());
       weekdays = [...weekdays, ...weekdaysInNextMonth];
     }
+
     // 各レコード行に日付を追加
     const allResult = await Promise.all(
       pageIds.map(async (pageId, index) => {

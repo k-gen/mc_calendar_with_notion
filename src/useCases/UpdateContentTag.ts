@@ -11,6 +11,7 @@ export default class UpdateContentTag {
   invoke = async (today: Dayjs) => {
     const pageIds = await this.notionRepo.getPageIds();
     if (pageIds == null || pageIds.length === 0) return;
+
     const allResult = await Promise.all(
       pageIds.map(async pageId => {
         if (await this.notionRepo.isToday(pageId, today)) {

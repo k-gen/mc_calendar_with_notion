@@ -16,14 +16,12 @@ declare module 'dayjs' {
   }
 }
 
-dayjs.prototype = {
-  ...dayjs.prototype,
-  formatY4M2D2: function () {
+dayjs.prototype.formatY4M2D2 = function () {
     return this.format('YYYY-MM-DD')
-  },
-  isSameAtDay: function (date: ConfigType) {
-    return this.isSame(date, 'day')
-  },
+}
+
+dayjs.prototype.isSameAtDay = function (date: ConfigType) {
+  return this.isSame(date, 'day')
 }
 
 export { dayjs as dayjsJa }

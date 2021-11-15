@@ -37,5 +37,8 @@ describe("utils.hasWeekday", () => {
 
         console.log(`date2021_11_01.isSame(date2021_11_01.startOf('month'), 'day')`, date2021_11_01.isSame(date2021_11_01.startOf('month'), 'day'))
         console.log(`date2021_11_01 === date2021_11_01.startOf('month')`, date2021_11_01 === date2021_11_01.startOf('month'))
+
+        console.log(dayjsJa('2021-01-31').date(1).add(1, 'month').formatY4M2D2())
+        console.log(dayjsJa('2021-01-31').add(1, 'month').date(1).formatY4M2D2())
     })
 })

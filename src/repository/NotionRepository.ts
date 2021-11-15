@@ -1,7 +1,6 @@
 import { Client, UnknownHTTPResponseError } from "@notionhq/client/build/src";
 import {
   DatabasesQueryParameters,
-  DatabasesQueryResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import { DatePropertyValue, Page } from "@notionhq/client/build/src/api-types";
 import { Dayjs } from "dayjs";
