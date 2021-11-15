@@ -2,7 +2,7 @@ import { notion, databaseId } from "../config/index.js";
 import { DatePropertyValue, Page } from "@notionhq/client/build/src/api-types";
 import { UnknownHTTPResponseError } from "@notionhq/client";
 import { Dayjs } from "dayjs";
-import { getWeekdaysByDate } from "../utils";
+import { getWeekdaysByDate, isDetectiveType } from "../utils";
 
 import { Config } from "../config.js";
 
@@ -107,8 +107,9 @@ export const queryNextMC = async (today: Dayjs): Promise<Page> => {
 
     // 今日から直近の平日を日直として変数に代入
     return response.results.find((result) => (
-      today.diff((result.properties.Date as DatePropertyValue).date?.start, 'day') < 0
-  )) ?? response.results[0]
+      isDetectiveType<DatePropertyValue>(result.properties.Date)
+        && today.diff(result.properties.Date.date?.start, 'day') < 0
+    )) ?? response.results[0]
   } catch (error) {
     if (error instanceof UnknownHTTPResponseError) {
       console.log(error.body);
