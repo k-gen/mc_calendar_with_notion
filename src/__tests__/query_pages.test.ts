@@ -1,5 +1,5 @@
 import { notion } from '../config'
-import { queryPages } from "../modules/query_pages"
+import { queryPages } from "../modules/queryPages"
 import { getDiffContents } from '../utils';
 import * as mock from "./mock"
 
@@ -29,7 +29,7 @@ describe("query_pages.queryDiffContents", () => {
 //     beforeEach(() => {
 //         httpRequestGetMock = jest.spyOn(notion.databases, "query")
 //         httpRequestGetMock.mockResolvedValue(mock.pages)
-//     })        
+//     })
 //     test("0", async () => {
 //         await query_pages.queryDeletePages([])
 //     })

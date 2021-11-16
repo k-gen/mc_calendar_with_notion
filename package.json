@@ -2,8 +2,10 @@
   "name": "mc_calendar_with_notion",
   "version": "1.0.0",
   "description": "",
-  "type": "module",
   "main": "./dist/index.js",
+  "engines": {
+    "node": "16.x"
+  },
   "scripts": {
     "start": "functions-framework --target=update --source=dist/",
     "debug": "node --inspect node_modules/@google-cloud/functions-framework --target=update",
