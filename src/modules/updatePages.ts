@@ -3,6 +3,8 @@ import { Page, TitlePropertyValue } from "@notionhq/client/build/src/api-types";
 import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import { UnknownHTTPResponseError } from "@notionhq/client";
 import { queryNextMC, queryClonePage } from "./queryPages.js";
+import { Dayjs } from "dayjs";
+import { NotionRepository } from "../repository/NotionRepository.js";
 
 /**
  * 日直当番の日付を各行のDateプロパティに追加
@@ -49,12 +51,14 @@ export const updateContentOfDate = async (
  */
 export const updateContentOfTodayTags = async (
   pages: Page[],
-  today: string
+  today: Dayjs
 ): Promise<PagesUpdateResponse[]> => {
+  const notionRepository = new NotionRepository()
+
   try {
     return await Promise.all(
       pages.map(async page => {
-        if (await isToday(page.id, today)) {
+        if (await notionRepository.isToday(page.id, today)) {
           return await notion.pages.update({
             page_id: page.id,
             archived: false,
@@ -68,18 +72,18 @@ export const updateContentOfTodayTags = async (
               },
             },
           });
-        } else {
-          return await notion.pages.update({
-            page_id: page.id,
-            archived: false,
-            properties: {
-              Tags: {
-                type: "select",
-                select: null,
-              },
-            },
-          });
         }
+
+        return await notion.pages.update({
+          page_id: page.id,
+          archived: false,
+          properties: {
+            Tags: {
+              type: "select",
+              select: null,
+            },
+          },
+        });
       })
     );
   } catch (error) {
@@ -96,7 +100,7 @@ export const updateContentOfTodayTags = async (
  * @returns PagesUpdateResponse
  */
 export const updateContentOfNextTimeTags = async (
-  today: string
+  today: Dayjs
 ): Promise<PagesUpdateResponse> => {
   const target = await queryNextMC(today);
   try {
