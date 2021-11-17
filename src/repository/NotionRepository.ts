@@ -1,7 +1,6 @@
 import { Client, UnknownHTTPResponseError } from "@notionhq/client/build/src";
 import {
   DatabasesQueryParameters,
-  DatabasesQueryResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import { DatePropertyValue, Page } from "@notionhq/client/build/src/api-types";
 import { RequestParameters } from "@notionhq/client/build/src/Client";
@@ -10,13 +9,6 @@ import { Config } from "../config";
 import { isDetectiveType } from "../utils";
 
 const { KEY, DATABASE_ID, Props } = Config.Notion;
-
-export interface NotionRepositoryInterface {
-  request?: unknown,
-  databases: {
-    query: (args: DatabasesQueryParameters) => Promise<DatabasesQueryResponse>
-  }
-}
 
 export class NotionRepository {
   #notion: Client;
@@ -72,8 +64,8 @@ export class NotionRepository {
 
       if (!isDetectiveType<DatePropertyValue>(datePropName))
         throw new Error("Date Prop Name is not a Date.");
-
-      if (datePropName.date !== null) return today.isSame(datePropName.date.start, 'day')
+      if (datePropName.date !== null)
+        return today.isSameAtDay(datePropName.date.start)
     } catch (error) {
       if (error instanceof UnknownHTTPResponseError) {
         console.error({ error });
