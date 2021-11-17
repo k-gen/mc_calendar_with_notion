@@ -15,21 +15,6 @@ describe('NotionRepository', () => {
   })
 
   test('call:getPages', async () => {
-    // jest.spyOn(Client.prototype, 'request').mockImplementation(() => Promise.resolve())
-
-    // const querySpy = jest.fn(() => Promise.resolve(pages))
-    // Object.assign(Client.prototype, 'databases', {
-    //   value: { query: querySpy }
-    // })
-
-    // const querySpy = jest.spyOn(Client.prototype.databases, 'query').mockImplementation(() => Promise.resolve(pages)) // TODO これが動かない理由が不明
-
-    // jest.mock('@notionhq/client/build/src/Client', () => ({
-    //   databases: {
-    //     query: () => Promise.resolve(pages)
-    //   }
-    // }))
-
     const notionRepositorySpy = new NotionRepository()
     const querySpy = jest.spyOn(notionRepositorySpy, 'query').mockImplementation(() => Promise.resolve(pages))
 
@@ -37,6 +22,4 @@ describe('NotionRepository', () => {
 
     expect(querySpy).toHaveBeenCalled()
   })
-  // const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
-  // expect(consoleErrorSpy).toHaveBeenCalled() // .toHaveBeenCalledTimes(1);
 })
