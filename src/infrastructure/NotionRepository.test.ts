@@ -18,8 +18,16 @@ describe('NotionRepository', () => {
     const notionRepositorySpy = new NotionRepository()
     const querySpy = jest.spyOn(notionRepositorySpy, 'query').mockImplementation(() => Promise.resolve(pages))
 
-    await notionRepositorySpy.getPageIds()
+    const result = await notionRepositorySpy.getPageIds()
+    if (!result) {
+      throw new Error('The results property of the page mock is empty');
+    }
 
     expect(querySpy).toHaveBeenCalled()
+    expect(result).toEqual(pages.results.map(result => result.id))
+  })
+
+  test('', async () => {
+
   })
 })
