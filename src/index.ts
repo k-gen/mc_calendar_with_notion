@@ -1,6 +1,6 @@
 import { dayjsJa } from "./utils";
 import UpdateContent from "./controller/UpdateContent";
-import { NotionRepository } from "./repository/NotionRepository";
+import { NotionRepository } from "./infrastructure/NotionRepository";
 import {
     updateContentOfDate,
     updateContentOfNextTimeTags,

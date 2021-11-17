@@ -4,7 +4,7 @@ import { PagesUpdateResponse } from "@notionhq/client/build/src/api-endpoints";
 import { UnknownHTTPResponseError } from "@notionhq/client";
 import { queryNextMC, queryClonePage } from "./queryPages.js";
 import { Dayjs } from "dayjs";
-import { NotionRepository } from "../repository/NotionRepository.js";
+import { NotionRepository } from "../infrastructure/NotionRepository.js";
 
 /**
  * 日直当番の日付を各行のDateプロパティに追加

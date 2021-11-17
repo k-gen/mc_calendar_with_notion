@@ -1,4 +1,4 @@
-import { NotionRepository } from "../repository/NotionRepository";
+import { NotionRepository } from "../infrastructure/NotionRepository";
 import { dayjsJa, getWeekdaysByDate } from "../utils";
 
 export default class UpdateContentDate {

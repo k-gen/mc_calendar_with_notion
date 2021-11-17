@@ -1,4 +1,4 @@
-import { NotionRepository } from "../repository/NotionRepository";
+import { NotionRepository } from "../infrastructure/NotionRepository";
 import UpdateContentDate from "../useCases/UpdateContentDate";
 import UpdateContentTag from "../useCases/UpdateContentTag";
 import { dayjsJa } from "../utils";
