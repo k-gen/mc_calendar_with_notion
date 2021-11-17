@@ -25,7 +25,7 @@ export class NotionRepository {
   }
 
   // TODO rewire使ってprivateにしたい
-  query = () =>　(
+  query = () => (
     this.#notion.databases.query({
       database_id: this.#DATABASE_ID,
     })
