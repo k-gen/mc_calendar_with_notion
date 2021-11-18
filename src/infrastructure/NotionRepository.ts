@@ -31,6 +31,12 @@ export class NotionRepository {
     })
   )
 
+  retrieve = ({ pageId }: { pageId: string }) => (
+    this.#notion.pages.retrieve({
+      page_id: pageId
+    })
+  )
+
   getPageIds = async () => {
     try {
       const response = await this.query()
@@ -53,12 +59,11 @@ export class NotionRepository {
     today: Dayjs
   ): Promise<boolean | undefined> => {
     try {
-      const response = await this.#notion.pages.retrieve({
-        page_id: pageId,
-      });
+      const response = await this.retrieve({pageId});
 
-      if (!(Props.DATE in response.properties))
+      if (!(Props.DATE in response.properties)) {
         throw new Error("Date Prop Name is not found.");
+      }
 
       const datePropName = response.properties[Props.DATE];
 
@@ -67,9 +72,10 @@ export class NotionRepository {
       if (datePropName.date !== null)
         return today.isSameAtDay(datePropName.date.start)
     } catch (error) {
-      if (error instanceof UnknownHTTPResponseError) {
-        console.error({ error });
-      }
+      // if (error instanceof UnknownHTTPResponseError) {
+      //   console.error({ error });
+      // }
+      console.error({ error });
     }
   };
 

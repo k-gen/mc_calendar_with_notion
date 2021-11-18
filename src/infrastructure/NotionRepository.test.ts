@@ -1,5 +1,7 @@
+import { DatabasesQueryResponse, PagesRetrieveResponse } from "@notionhq/client/build/src/api-endpoints";
 import Client from "@notionhq/client/build/src/Client";
-import { pages } from "../__tests__/mock";
+import { dayjsJa } from "../utils";
+import { page, pages } from "../__tests__/mock";
 import { NotionRepository } from "./NotionRepository";
 
 describe('NotionRepository', () => {
@@ -14,20 +16,38 @@ describe('NotionRepository', () => {
     expect(() => {new NotionRepository({ _KEY: '' })}).toThrowError('Notion config is not set') // .toHaveBeenCalledTimes(1);
   })
 
-  test('call:getPages', async () => {
-    const notionRepositorySpy = new NotionRepository()
-    const querySpy = jest.spyOn(notionRepositorySpy, 'query').mockImplementation(() => Promise.resolve(pages))
+  describe('getPages()', () => {
+    test('getPages(): success', async () => {
+      const notionRepository = new NotionRepository()
+      const querySpy = jest.spyOn(notionRepository, 'query').mockImplementation((): Promise<DatabasesQueryResponse> => Promise.resolve(pages as DatabasesQueryResponse))
 
-    const result = await notionRepositorySpy.getPageIds()
-    if (!result) {
-      throw new Error('The results property of the page mock is empty');
-    }
+      const result = await notionRepository.getPageIds()
+      if (!result) {
+        throw new Error('The results property of the page mock is empty');
+      }
 
-    expect(querySpy).toHaveBeenCalled()
-    expect(result).toEqual(pages.results.map(result => result.id))
+      expect(querySpy).toHaveBeenCalled()
+      expect(result).toEqual(pages.results.map(result => result.id))
+    })
   })
 
-  test('', async () => {
+  describe('isToday()', () => {
+    test('isToday(): failed: DateProperty is undefined', async () => {
+      const notionRepository = new NotionRepository()
+      const retrieveSpy = jest.spyOn(notionRepository, 'retrieve').mockImplementation((_: { pageId: string }): Promise<PagesRetrieveResponse> => {
+        delete page.properties.Date
+        return Promise.resolve({
+          ...page,
+          properties: {
+            ...page.properties,
+          }
+        } as unknown as PagesRetrieveResponse)
+      })
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {})
 
+      await notionRepository.isToday('', dayjsJa())
+      expect(retrieveSpy).toHaveBeenCalled()
+      expect(consoleErrorSpy).toHaveBeenCalled()
+    })
   })
 })

@@ -1,5 +1,5 @@
 import { UnknownHTTPResponseError } from "@notionhq/client"
-import { DatabasesQueryResponse, PagesCreateResponse } from "@notionhq/client/build/src/api-endpoints"
+import { DatabasesQueryResponse, PagesCreateResponse, PagesRetrieveResponse } from "@notionhq/client/build/src/api-endpoints"
 import { notion, databaseId } from "../config/index.js"
 
 export const today = {
@@ -64,7 +64,65 @@ export const today = {
     url: "https://www.notion.so/b0b1467fb5c140f28d9c3576e8c28be5",
 }
 
-export const pages: DatabasesQueryResponse = {
+export const page: PagesRetrieveResponse = {
+  object: "page",
+  id: "eac5f9e7-1291-4191-bb85-8b43fd824284",
+  created_time: "2021-09-25T16:01:00.000Z",
+  last_edited_time: "2021-09-29T16:21:00.000Z",
+  cover: null,
+  icon: null,
+  parent: {
+    type: "database_id",
+    database_id: "c6287ef4-6527-4768-8a26-53cc5d55756e",
+  },
+  archived: false,
+  properties: {
+    Date: {
+      id: "AfhX",
+      type: "date",
+      date: {
+        start: "2021-09-01",
+        end: undefined,
+      },
+    },
+    Clone: {
+      id: "iZMv",
+      type: "checkbox",
+      checkbox: false,
+    },
+    Tags: {
+      id: "iyLD",
+      type: "select",
+      select: null,
+    },
+    Name: {
+      id: "title",
+      type: "title",
+      title: [
+        {
+          type: "text",
+          text: {
+            content: "ももこ",
+            link: undefined,
+          },
+          annotations: {
+            bold: false,
+            italic: false,
+            strikethrough: false,
+            underline: false,
+            code: false,
+            color: "default",
+          },
+          plain_text: "ももこ",
+          href: undefined,
+        },
+      ],
+    },
+  },
+  url: "https://www.notion.so/eac5f9e712914191bb858b43fd824284",
+}
+
+export const pages = {
   object: "list",
   has_more: false,
   next_cursor: null,
@@ -1276,6 +1334,7 @@ export const pages: DatabasesQueryResponse = {
       // },
   ]
 }
+
 
 const memberList = [
 "よしこ",
