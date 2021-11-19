@@ -3,9 +3,9 @@ import {
   DatabasesQueryParameters,
 } from "@notionhq/client/build/src/api-endpoints";
 import { DatePropertyValue, Page } from "@notionhq/client/build/src/api-types";
-import { RequestParameters } from "@notionhq/client/build/src/Client";
 import { Dayjs } from "dayjs";
 import { Config } from "../config";
+import { NotionRepositoryProps } from "../repository/notion.interface";
 import { isDetectiveType } from "../utils";
 
 const { KEY, DATABASE_ID, Props } = Config.Notion;
@@ -16,8 +16,7 @@ export class NotionRepository {
 
   // FIXME process.envをmock化しても反映されなかった為引数でDIしてる
   constructor(
-    { _KEY, _DATABASE_ID }: { _KEY?: string, _DATABASE_ID?: string}
-    = { _KEY: KEY, _DATABASE_ID: DATABASE_ID }
+    { _KEY, _DATABASE_ID }: NotionRepositoryProps = { _KEY: KEY, _DATABASE_ID: DATABASE_ID }
   ) {
     if (!_KEY || !_DATABASE_ID) throw new Error("Notion config is not set");
     this.#notion = new Client({ auth: _KEY });
