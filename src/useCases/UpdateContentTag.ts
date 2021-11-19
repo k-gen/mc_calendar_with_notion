@@ -1,5 +1,5 @@
 import { Dayjs } from "dayjs";
-import { NotionRepository } from "../repository/NotionRepository";
+import { NotionRepository } from "../infrastructure/NotionRepository";
 
 export default class UpdateContentTag {
   constructor(private notionRepo: NotionRepository) {}
