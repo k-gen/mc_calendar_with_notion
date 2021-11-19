@@ -1,3 +1,5 @@
+import { Page, TitlePropertyValue } from "@notionhq/client/build/src/api-types";
+
 /**
  * 差分コンテンツの取得
  * @param pages - ページオブジェクトの一覧

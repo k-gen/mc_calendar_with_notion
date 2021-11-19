@@ -1,9 +1,9 @@
 import { Client, UnknownHTTPResponseError } from "@notionhq/client/build/src";
 import {
   DatabasesQueryParameters,
-  DatabasesQueryResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import { DatePropertyValue, Page } from "@notionhq/client/build/src/api-types";
+import { Dayjs } from "dayjs";
 import { Config } from "../config";
 import { isDetectiveType } from "../utils";
 
@@ -23,7 +23,7 @@ export class NotionRepository {
     try {
       const response = (await this.#notion.databases.query({
         database_id: this.#DATABASE_ID,
-      })) as DatabasesQueryResponse;
+      }))
       return response.results.map(result => result.id);
     } catch (error) {
       if (error instanceof UnknownHTTPResponseError) {
@@ -35,12 +35,12 @@ export class NotionRepository {
   /**
    * 対象レコードのDateカラムの値が今日の日付と一致しているか判定
    * @param {string} pageId - page_id
-   * @param {string} today - YYYY-MM-DD
+   * @param today
    * @returns {Promise<boolean| undefined>} レコードとtodayが一致しているか
    */
   isToday = async (
     pageId: string,
-    todayChar: string
+    today: Dayjs
   ): Promise<boolean | undefined> => {
     try {
       const response = await this.#notion.pages.retrieve({
@@ -52,7 +52,7 @@ export class NotionRepository {
       if (!isDetectiveType<DatePropertyValue>(datePropName))
         throw new Error("Date Prop Name is not a Date.");
       if (datePropName.date !== null)
-        return datePropName.date.start === todayChar;
+        return today.isSameAtDay(datePropName.date.start)
     } catch (error) {
       if (error instanceof UnknownHTTPResponseError) {
         console.error({ error });
